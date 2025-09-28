@@ -57,6 +57,73 @@ export type FilesList = {
       type: FileType;
     };
   };
-}
+};
 
 export type PoolFile = { url: string; path: string };
+
+export type Versions = {
+  latest: { release: string; snapshot: string };
+  versions: {
+    id: string;
+    type: "snapshot" | "release" | "old_beta" | "old_alpha";
+    url: string;
+    time: string;
+    releaseTime: string;
+    sha1: string;
+    complianceLevel: number;
+  }[];
+};
+
+export type Version = {
+  arguments: {
+    game: string[];
+    jvm:
+      | {
+          rules: {
+            action: string;
+            os: { name?: string; version?: string; arch?: string };
+          }[];
+          value: string[] | string;
+        }
+      | string[];
+  };
+  assetIndex: {
+    id: string;
+    sha1: string;
+    size: number;
+    totalSize: number;
+    url: string;
+  };
+  assets: string;
+  complianceLevel: number;
+  downloads: {
+    client: File;
+    client_mappings: File;
+    server: File;
+    server_mappings: File;
+  };
+  id: string;
+  javaVersion: {
+    component: RuntimeComponent;
+    majorVersion: number;
+  };
+  libraries: {
+    downloads: {
+      artifacts: {
+        path: string;
+        sha1: string;
+        size: number;
+        url: string;
+      };
+      name: string;
+      rules: { action: string; os: { name: string } }[];
+    };
+  }[];
+  logging: {
+    client: {
+      argument: string;
+      file: { id: string; sha1: string; size: number; url: string };
+      type: string;
+    };
+  };
+};
