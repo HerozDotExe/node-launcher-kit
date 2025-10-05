@@ -8,6 +8,7 @@ console.log(nativesPath)
 await fs.rm(nativesPath, { recursive: true, force: true });
 await fs.mkdir(nativesPath, { recursive: true });
 
+// old version because newer versions doesn't have natives
 test(
   "download natives for 1.15 correctly",
   { timeout: 10000 },
