@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { test } from "vitest";
 import * as nlk from "../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
