@@ -9,7 +9,7 @@ import {
   RuntimeOS,
 } from "../utils/types";
 
-export async function install(
+export async function download(
   os: RuntimeOS,
   component: RuntimeComponent,
   destination: string,

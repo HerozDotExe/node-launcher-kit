@@ -17,7 +17,7 @@ async function exists(path: string) {
 }
 
 test("install java-runtime-beta for linux correctly", {timeout: 10000}, async () => {
-  await nlk.core.java.install("linux", "java-runtime-beta", javaPath);
+  await nlk.core.java.download("linux", "java-runtime-beta", javaPath);
 
   expect(
     await fs.readFile(path.join(javaPath, "release"), { encoding: "utf-8" }),
