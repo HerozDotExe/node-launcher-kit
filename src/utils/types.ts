@@ -92,7 +92,7 @@ type LibraryRule = { action: string; os?: { name: string } };
 
 export type Library = {
   downloads: {
-    artifacts: {
+    artifact: {
       path: string;
       sha1: string;
       size: number;
