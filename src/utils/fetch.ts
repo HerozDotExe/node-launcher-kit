@@ -12,6 +12,7 @@ export async function downloadFile(
   signal: AbortSignal,
 ) {
   try {
+    if (!file) return;
     const res = await fetch(file.url, { signal });
 
     if (!res.ok)

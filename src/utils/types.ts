@@ -74,15 +74,45 @@ export type Versions = {
   }[];
 };
 
+export type Native = {
+  path: string;
+  sha1: string;
+  size: number;
+  url: string;
+};
+
+type NativeOS = "natives-linux" | "natives-windows" | "natives-macos";
+
+type JVMRule = {
+  action: string;
+  os: { name?: string; version?: string; arch?: string };
+};
+
+type LibraryRule = { action: string; os?: { name: string } };
+
+export type Library = {
+  downloads: {
+    artifacts: {
+      path: string;
+      sha1: string;
+      size: number;
+      url: string;
+    };
+    classifiers?: {
+      [key in NativeOS]: Native;
+    };
+  };
+  name: string;
+  rules?: LibraryRule[];
+  natives?: { [key: string]: string };
+};
+
 export type Version = {
   arguments: {
     game: string[];
     jvm:
       | {
-          rules: {
-            action: string;
-            os: { name?: string; version?: string; arch?: string };
-          }[];
+          rules: JVMRule[];
           value: string[] | string;
         }
       | string[];
@@ -107,18 +137,7 @@ export type Version = {
     component: RuntimeComponent;
     majorVersion: number;
   };
-  libraries: {
-    downloads: {
-      artifacts: {
-        path: string;
-        sha1: string;
-        size: number;
-        url: string;
-      };
-      name: string;
-      rules: { action: string; os: { name: string } }[];
-    };
-  }[];
+  libraries: Library[];
   logging: {
     client: {
       argument: string;

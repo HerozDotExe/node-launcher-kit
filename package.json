@@ -21,17 +21,16 @@
   "packageManager": "pnpm@10.17.1",
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@types/adm-zip": "^0.5.7",
     "@types/node": "^24.5.2",
+    "adm-zip": "^0.5.16",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.4.0",
+    "p-queue": "^8.1.1",
     "prettier": "3.6.2",
     "tsup": "^8.5.0",
     "typescript-eslint": "^8.44.1",
     "vitest": "^3.2.4"
-  },
-  "dependencies": {
-    "p-limit": "^7.1.1",
-    "p-queue": "^8.1.1"
   }
 }
