@@ -84,11 +84,14 @@ export type Native = {
 type NativeOS = "natives-linux" | "natives-windows" | "natives-macos";
 
 type JVMRule = {
-  action: string;
+  action: "allow" | "disallow";
   os: { name?: string; version?: string; arch?: string };
 };
 
-type LibraryRule = { action: string; os?: { name: string } };
+type LibraryRule = {
+  action: "allow" | "disallow";
+  os?: { name?: string; arch?: string };
+};
 
 export type Library = {
   downloads: {

@@ -1,7 +1,7 @@
 import { Library, Native, PoolFile, Version } from "../utils/types";
 import path from "path";
 import { ensureDir } from "../utils/fs";
-import { parseRule } from "../utils/rules";
+import { isNeeded } from "../utils/rules";
 import { os } from "../utils/systemInfo";
 import { DownloadPool } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
@@ -15,7 +15,7 @@ export async function download(destination: string, versionManifest: Version) {
   // Download archives to a temp folder
   const files = versionManifest.libraries.map<PoolFile>((library: Library) => {
     if (library.downloads && library.downloads.classifiers) {
-      if (parseRule(library)) return null;
+      if (!isNeeded(library)) return null;
 
       const native: Native =
         os() === "osx"
