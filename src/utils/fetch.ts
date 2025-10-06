@@ -2,6 +2,8 @@ import fs from "fs";
 import { pipeline } from "stream/promises";
 import { PoolFile } from "./types";
 import { Task } from "./task";
+import { ensureDir } from "./fs";
+import path from "path";
 
 export async function fetchJson<T>(url: string): Promise<T> {
   return await (await fetch(url)).json();
@@ -13,6 +15,7 @@ export async function downloadFile(
 ) {
   try {
     if (!file) return;
+    await ensureDir(path.dirname(file.path), true);
     const res = await fetch(file.url, { signal });
 
     if (!res.ok)
