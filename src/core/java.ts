@@ -16,7 +16,7 @@ export async function download(
   signal?: AbortController,
 ) {
   const javaRuntimesManifests = await fetchJson<JavaRuntimesManifests>(
-    "https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json",
+    "https://piston-meta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json",
   );
   const javaRuntimeManifest = (
     await fetchJson<FilesList>(
