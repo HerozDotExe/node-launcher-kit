@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { expect, test, vi } from "vitest";
 import * as nlk from "../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
@@ -15,6 +15,9 @@ async function exists(path: string) {
     return false;
   }
 }
+
+// mock os to linux for testing
+vi.stubGlobal("process", { platform: "linux" });
 
 test("install java-runtime-beta for linux correctly", {timeout: 10000}, async () => {
   await nlk.core.java.download("linux", "java-runtime-beta", javaPath);
