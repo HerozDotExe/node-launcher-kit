@@ -23,8 +23,8 @@ export class Task<T> {
   ) {
     try {
       for (const element of data) {
-        this.queue.add(async () => {
-          await f(element, this.controller.signal);
+        this.queue.add(() => {
+          f(element, this.controller.signal);
         });
       }
     } catch (error) {
