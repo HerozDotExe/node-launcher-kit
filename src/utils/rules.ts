@@ -1,5 +1,5 @@
 import { arch, os } from "./systemInfo";
-import { Version } from "./types";
+import { Library } from "./types";
 
 // Copied from https://github.com/Pierce01/MinecraftLauncher-core/blob/f4ce947658e82218011d92c36d4d8a1b8c0c2429/components/handler.js#L237
 // export function parseRule(library: Version["libraries"][number]): boolean {
@@ -22,7 +22,7 @@ import { Version } from "./types";
 //   }
 // }
 
-export function isNeeded(library: Version["libraries"][number]): boolean {
+export function isNeeded(library: Library): boolean {
   if (library.rules) {
     for (const rule of library.rules) {
       if (rule.action === "allow") {
