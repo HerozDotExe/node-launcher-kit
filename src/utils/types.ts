@@ -149,3 +149,12 @@ export type Version = {
     };
   };
 };
+
+export type AssetIndex = {
+  objects: {
+    [key: string]: {
+      hash: string;
+      size: number;
+    };
+  };
+};

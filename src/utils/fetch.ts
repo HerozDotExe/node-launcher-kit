@@ -9,20 +9,17 @@ export async function fetchJson<T>(url: string): Promise<T> {
   return await (await fetch(url)).json();
 }
 
-export async function downloadFile(
-  file: { url: string; path: string },
-  signal: AbortSignal,
-) {
+export async function downloadFile(file: { url: string; path: string }) {
   try {
     if (!file) return;
     await ensureDir(path.dirname(file.path), true);
-    const res = await fetch(file.url, { signal });
+    const res = await fetch(file.url);
 
     if (!res.ok)
       throw new Error(
         `Failed to download ${file.url}: ${res.status} ${res.statusText}`,
       );
-    await pipeline(res.body, fs.createWriteStream(file.path), { signal });
+    await pipeline(res.body, fs.createWriteStream(file.path));
   } catch (error) {
     if (error.name !== "AbortError") throw error;
     return;

@@ -10,26 +10,15 @@ export class Task<T> {
   progressCallback: (done: number, total: number) => void;
 
   constructor(concurrency: number) {
-    this.controller = new AbortController();
     this.concurrency = concurrency;
     this.queue = new pQueue({ concurrency: this.concurrency });
     this.done = 0;
     this.total = 0;
   }
 
-  async _run(
-    f: (element: unknown, signal: AbortSignal) => Promise<void>,
-    data: T[],
-  ) {
-    try {
-      for (const element of data) {
-        this.queue.add(() => {
-          f(element, this.controller.signal);
-        });
-      }
-    } catch (error) {
-      if (error.name !== "AbortError") throw error;
-      return;
+  async _run(f: (element: unknown) => Promise<void>, data: T[]) {
+    for (const element of data) {
+      this.queue.add(() => f(element));
     }
 
     this.queue.on("completed", () => {
@@ -42,7 +31,6 @@ export class Task<T> {
 
   cancel() {
     this.queue.clear();
-    this.controller.abort();
   }
 }
 
