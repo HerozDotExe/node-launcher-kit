@@ -88,6 +88,11 @@ type JVMRule = {
   os: { name?: string; version?: string; arch?: string };
 };
 
+type Argument = {
+  rules: JVMRule[];
+  value: string[] | string;
+};
+
 type LibraryRule = {
   action: "allow" | "disallow";
   os?: { name?: string; arch?: string };
@@ -112,13 +117,8 @@ export type Library = {
 
 export type Version = {
   arguments: {
-    game: string[];
-    jvm:
-      | {
-          rules: JVMRule[];
-          value: string[] | string;
-        }
-      | string[];
+    game: (Argument | string)[];
+    jvm: (Argument | string)[];
   };
   assetIndex: {
     id: string;
