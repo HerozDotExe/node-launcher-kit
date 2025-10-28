@@ -3,9 +3,9 @@ import * as nlk from "../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 
-const nativesPath = path.join(import.meta.dirname, "temp/natives");
-await fs.rm(nativesPath, { recursive: true, force: true });
-await fs.mkdir(nativesPath, { recursive: true });
+const versionsPath = path.join(import.meta.dirname, "temp/versions");
+await fs.rm(versionsPath, { recursive: true });
+await fs.mkdir(versionsPath, { recursive: true });
 
 async function exists(path: string) {
   try {
@@ -19,13 +19,15 @@ async function exists(path: string) {
 // mock os to linux for testing
 vi.stubGlobal("process", { platform: "linux" });
 
-// old version because newer versions doesn't have natives
-test("download natives for 1.21.8 correctly", { timeout: 10000 }, async () => {
+test("parse arguments correctly for 1.21.8", { timeout: 10000 }, async () => {
   const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
-  await nlk.core.natives.download(nativesPath, versionManifest);
+  await nlk.core.version.downloadJar(
+    versionManifest,
+    path.join(versionsPath, ".."),
+  );
 
   expect(
-    await exists(path.join(nativesPath, "libglfw.so")),
-    "libglfw.so exists",
+    await exists(path.join(versionsPath, `${versionManifest.id}.jar`)),
+    "check jar file",
   ).toBe(true);
 });

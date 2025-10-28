@@ -11,7 +11,6 @@ export async function fetchJson<T>(url: string): Promise<T> {
 
 export async function downloadFile(file: { url: string; path: string }) {
   try {
-    if (!file) return;
     await ensureDir(path.dirname(file.path), true);
     const res = await fetch(file.url);
 

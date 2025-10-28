@@ -8,6 +8,7 @@ import {
   RuntimeComponent,
   RuntimeOS,
 } from "../utils/types";
+import { os } from "../utils/systemInfo";
 
 export async function download(
   os: RuntimeOS,
@@ -47,4 +48,9 @@ export async function download(
   if (process.platform !== "win32") {
     await fs.chmod(path.join(destination, "bin/java"), 0o777);
   }
+}
+
+export function getJavaExecutable(javaRoot: string, show=false) {
+  const executable = `${os() === "windows" && show ? "javaw" : "java"}${os() === "windows" ? ".exe" : ""}`
+  return path.join(javaRoot, "bin", executable)
 }

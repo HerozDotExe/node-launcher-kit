@@ -1,5 +1,7 @@
-import { fetchJson } from "../utils/fetch";
+import { downloadFile, fetchJson } from "../utils/fetch";
+import { exists } from "../utils/fs";
 import { Versions, Version } from "../utils/types";
+import path from "path";
 
 export async function getVersionManifest(versionString: string) {
   const versions = await (
@@ -21,4 +23,17 @@ export async function getVersionManifest(versionString: string) {
   const versionManifest = await fetchJson<Version>(versionManifestURL);
 
   return versionManifest;
+}
+
+export async function downloadJar(versionManifest: Version, gameRoot: string) {
+  const destination = path.join(
+    gameRoot,
+    "versions",
+    `${versionManifest.id}.jar`,
+  );
+  if (!(await exists(destination)))
+    await downloadFile({
+      url: versionManifest.downloads.client.url,
+      path: destination,
+    });
 }

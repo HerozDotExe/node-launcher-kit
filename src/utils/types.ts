@@ -83,20 +83,18 @@ export type Native = {
 
 type NativeOS = "natives-linux" | "natives-windows" | "natives-macos";
 
-type JVMRule = {
+type Rules = {
   action: "allow" | "disallow";
-  os: { name?: string; version?: string; arch?: string };
+  os?: { name?: string; version?: string; arch?: string };
+  features?: { [key: string]: boolean };
 };
 
-type Argument = {
-  rules: JVMRule[];
-  value: string[] | string;
-};
-
-type LibraryRule = {
-  action: "allow" | "disallow";
-  os?: { name?: string; arch?: string };
-};
+export type Argument =
+  | {
+      rules: Rules[];
+      value: string[] | string;
+    }
+  | string;
 
 export type Library = {
   downloads: {
@@ -111,14 +109,14 @@ export type Library = {
     };
   };
   name: string;
-  rules?: LibraryRule[];
+  rules?: Rules[];
   natives?: { [key: string]: string };
 };
 
 export type Version = {
   arguments: {
-    game: (Argument | string)[];
-    jvm: (Argument | string)[];
+    game: Argument[];
+    jvm: Argument[];
   };
   assetIndex: {
     id: string;
@@ -148,6 +146,11 @@ export type Version = {
       type: string;
     };
   };
+  mainClass: string;
+  minimumLauncherVersion: number;
+  releaseTime: string;
+  time: string;
+  type: string;
 };
 
 export type AssetIndex = {
@@ -156,5 +159,19 @@ export type AssetIndex = {
       hash: string;
       size: number;
     };
+  };
+};
+
+export type Auth = {
+  access_token: string;
+  client_token: string;
+  uuid: string;
+  name: string;
+  user_properties: string;
+  meta?: {
+    type: "mojang" | "msa";
+    demo: boolean;
+    xuid: string;
+    clientId: string;
   };
 };

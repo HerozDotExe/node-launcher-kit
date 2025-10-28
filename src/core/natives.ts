@@ -13,21 +13,26 @@ export async function download(destination: string, versionManifest: Version) {
   const tempNativesPath = await getTempFolder("natives");
 
   // Download archives to a temp folder
-  const files = versionManifest.libraries.map<PoolFile>((library: Library) => {
-    if (library.downloads && library.downloads.classifiers) {
-      if (!isNeeded(library)) return null;
+  const files: PoolFile[] = [];
 
-      const native: Native =
-        os() === "osx"
-          ? library.downloads.classifiers["natives-osx"] ||
-            library.downloads.classifiers["natives-macos"]
-          : library.downloads.classifiers[`natives-${os()}`];
+  for (const key in versionManifest.libraries) {
+    if (Object.prototype.hasOwnProperty.call(versionManifest.libraries, key)) {
+      const library = versionManifest.libraries[key];
+      if (library.downloads && library.downloads.classifiers) {
+        if (!isNeeded(library)) continue;
 
-      const name = native.path.split("/").pop();
+        const native: Native =
+          os() === "osx"
+            ? library.downloads.classifiers["natives-osx"] ||
+              library.downloads.classifiers["natives-macos"]
+            : library.downloads.classifiers[`natives-${os()}`];
 
-      return { url: native.url, path: path.join(tempNativesPath, name) };
+        const name = native.path.split("/").pop();
+
+        files.push({ url: native.url, path: path.join(tempNativesPath, name) });
+      }
     }
-  });
+  }
 
   const dPool = new DownloadPool(files, 5);
 
