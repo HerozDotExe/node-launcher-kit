@@ -4,6 +4,7 @@ import { Argument, Auth, PoolFile, Version } from "../utils/types";
 import { getJavaExecutable } from "./java";
 import { getLibraries } from "./libraries";
 import { version as packageVersion } from "../../package.json";
+import { getArgument } from "./log4j";
 
 function fillArguments(
   arg: string,
@@ -82,7 +83,7 @@ function generateClassPaths(versionManifest: Version, librariesRoot: string) {
   return libs.join(path.delimiter);
 }
 
-export function generateLaunchArguments(
+export async function generateLaunchArguments(
   versionManifest: Version,
   javaRoot: string,
   gameRoot: string,
@@ -115,5 +116,7 @@ export function generateLaunchArguments(
     p(game, arg);
   }
 
-  return `${getJavaExecutable(javaRoot)} ${jvm.join(" ")}${options.customJvm === "" ? "" : ` ${options.customJvm}`} -Xms${options.minRam} -Xmx${options.maxRam} -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M ${versionManifest.mainClass} ${game.join(" ")}`;
+  const log4j = await getArgument(versionManifest, gameRoot)
+
+  return `${getJavaExecutable(javaRoot)} ${jvm.join(" ")}${options.customJvm === "" ? "" : ` ${options.customJvm}`} -Xms${options.minRam} -Xmx${options.maxRam} -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M ${log4j} ${versionManifest.mainClass} ${game.join(" ")}`;
 }
