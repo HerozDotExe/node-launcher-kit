@@ -4,7 +4,7 @@ import { AssetIndex, PoolFile, Version } from "../utils/types";
 import fs from "fs/promises";
 import { downloadFile, DownloadPool } from "../utils/fetch";
 
-export async function download(destination: string, versionManifest: Version) {
+export async function AssetsDownloader(destination: string, versionManifest: Version) {
   await ensureDir(path.join(destination, "indexes"));
   await ensureDir(path.join(destination, "objects"));
 
@@ -14,7 +14,7 @@ export async function download(destination: string, versionManifest: Version) {
     `${versionManifest.assetIndex.id}.json`,
   );
 
-  if (!await exists(assetIndexPath)) {
+  if (!(await exists(assetIndexPath))) {
     await downloadFile({
       url: versionManifest.assetIndex.url,
       path: assetIndexPath,
@@ -35,7 +35,7 @@ export async function download(destination: string, versionManifest: Version) {
       const assetPath = path.join(destination, "objects", subhash, asset.hash);
       const assetURL = `https://resources.download.minecraft.net/${asset.hash.substring(0, 2)}/${asset.hash}`;
 
-      await ensureDir(path.dirname(assetPath))
+      await ensureDir(path.dirname(assetPath));
 
       files.push({ url: assetURL, path: assetPath });
     }
@@ -43,5 +43,5 @@ export async function download(destination: string, versionManifest: Version) {
 
   const dPool = new DownloadPool(files, 5);
 
-  await dPool.run();
+  return dPool;
 }

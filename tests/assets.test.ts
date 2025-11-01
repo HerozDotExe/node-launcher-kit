@@ -24,7 +24,10 @@ test(
   { timeout: 60 * 1000 },
   async () => {
     const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
-    await nlk.core.assets.download(assetsPath, versionManifest);
+    const assetsDownloader = await nlk.core.AssetsDownloader(assetsPath, versionManifest);
+    assetsDownloader.progressCallback = console.log
+    await assetsDownloader.run()
+
 
     expect(
       await exists(path.join(assetsPath, "objects", "00", "00c9fa8115347fb0220aaf72a8d7d921f5354112")),
