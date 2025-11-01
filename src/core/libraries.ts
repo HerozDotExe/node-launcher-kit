@@ -17,16 +17,17 @@ export function getLibraries(versionManifest: Version, librariesRoot: string) {
       }
     }
   }
-  
-  return libs
-}
-
-export async function download(librariesRoot: string, versionManifest: Version) {
-  const libs = getLibraries(versionManifest, librariesRoot);
-  // Download libraries
-  const dPool = new DownloadPool(libs, 5);
-
-  await dPool.run();
 
   return libs;
+}
+
+export async function LibrariesDownloader(
+  librariesRoot: string,
+  versionManifest: Version,
+) {
+  const libs = getLibraries(versionManifest, librariesRoot);
+
+  const dPool = new DownloadPool(libs, 5);
+
+  return dPool;
 }

@@ -24,7 +24,9 @@ test(
   { timeout: 10000 },
   async () => {
     const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
-    await nlk.core.libraries.download(librariesPath, versionManifest);
+    const LibrariesDownloader = await nlk.core.LibrariesDownloader(librariesPath, versionManifest);
+    LibrariesDownloader.progressCallback = console.log
+    await LibrariesDownloader.run()
 
     expect(
       await exists(path.join(librariesPath, "com/fasterxml/jackson/core/jackson-core/2.13.4/jackson-core-2.13.4.jar")),
