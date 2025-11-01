@@ -142,3 +142,9 @@ vite.config.ts.timestamp-*
 
 # Test temp folder
 tests/temp
+
+# Test files
+handler.js
+launcher.js
+custom-launch.txt
+vanilla-launch.txt
