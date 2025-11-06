@@ -1,5 +1,8 @@
 import path from "path";
-import { DownloadPool, fetchJson } from "../utils/fetch";
+import {
+  DownloadPoolWithCleanup,
+  fetchJson,
+} from "../utils/fetch";
 import fs from "fs/promises";
 import {
   FilesList,
@@ -10,11 +13,15 @@ import {
 } from "../utils/types";
 import { os } from "../utils/systemInfo";
 
-export async function download(
+export function getJavaExecutable(javaRoot: string, show = false) {
+  const executable = `${os() === "windows" && show ? "javaw" : "java"}${os() === "windows" ? ".exe" : ""}`;
+  return path.join(javaRoot, "bin", executable);
+}
+
+export async function JavaDownloader(
   os: RuntimeOS,
   component: RuntimeComponent,
   destination: string,
-  signal?: AbortController,
 ) {
   const javaRuntimesManifests = await fetchJson<JavaRuntimesManifests>(
     "https://piston-meta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json",
@@ -41,16 +48,12 @@ export async function download(
     }
   }
 
-  const dPool = new DownloadPool(files, 5);
+  const dPool = new DownloadPoolWithCleanup(files, 5, async () => {
+    if (process.platform !== "win32") {
+      await fs.chmod(path.join(destination, "bin/java"), 0o777);
+      console.log("chmoded")
+    }
+  });
 
-  await dPool.run();
-
-  if (process.platform !== "win32") {
-    await fs.chmod(path.join(destination, "bin/java"), 0o777);
-  }
-}
-
-export function getJavaExecutable(javaRoot: string, show=false) {
-  const executable = `${os() === "windows" && show ? "javaw" : "java"}${os() === "windows" ? ".exe" : ""}`
-  return path.join(javaRoot, "bin", executable)
+  return dPool;
 }

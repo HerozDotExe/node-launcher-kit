@@ -19,15 +19,28 @@ async function exists(path: string) {
 // mock os to linux for testing
 vi.stubGlobal("process", { platform: "linux" });
 
-test("install java-runtime-beta for linux correctly", {timeout: 10000}, async () => {
-  await nlk.core.java.download("linux", "java-runtime-delta", javaPath);
+test(
+  "install java-runtime-beta for linux correctly",
+  { timeout: 10000 },
+  async () => {
+    const javaDownloader = await nlk.core.java.JavaDownloader(
+      "linux",
+      "java-runtime-delta",
+      javaPath,
+    );
+    javaDownloader.progressCallback = console.log;
+    await javaDownloader.run();
 
-  expect(
-    await fs.readFile(path.join(javaPath, "release"), { encoding: "utf-8" }),
-    "check release file"
-  ).toBe(`JAVA_VERSION="21.0.7"
+    expect(
+      await fs.readFile(path.join(javaPath, "release"), { encoding: "utf-8" }),
+      "check release file",
+    ).toBe(`JAVA_VERSION="21.0.7"
 MODULES="java.base java.compiler java.datatransfer java.xml java.prefs java.desktop java.instrument java.logging java.management java.security.sasl java.naming java.rmi java.management.rmi java.net.http java.scripting java.security.jgss java.transaction.xa java.sql java.sql.rowset java.xml.crypto java.se java.smartcardio jdk.accessibility jdk.internal.jvmstat jdk.attach jdk.charsets jdk.internal.opt jdk.zipfs jdk.compiler jdk.crypto.ec jdk.crypto.cryptoki jdk.dynalink jdk.internal.ed jdk.editpad jdk.hotspot.agent jdk.httpserver jdk.incubator.vector jdk.internal.le jdk.internal.vm.ci jdk.internal.vm.compiler jdk.internal.vm.compiler.management jdk.jartool jdk.javadoc jdk.jcmd jdk.management jdk.management.agent jdk.jconsole jdk.jdeps jdk.jdwp.agent jdk.jdi jdk.jfr jdk.jlink jdk.jpackage jdk.jshell jdk.jsobject jdk.jstatd jdk.localedata jdk.management.jfr jdk.naming.dns jdk.naming.rmi jdk.net jdk.nio.mapmode jdk.random jdk.sctp jdk.security.auth jdk.security.jgss jdk.unsupported jdk.unsupported.desktop jdk.xml.dom"
 `);
 
-  expect(await exists(path.join(javaPath, "bin/java")), "bin/java exists").toBe(true);
-});
+    expect(
+      await exists(path.join(javaPath, "bin/java")),
+      "bin/java exists",
+    ).toBe(true);
+  },
+);

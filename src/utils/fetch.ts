@@ -98,3 +98,20 @@ export class DownloadPool extends Task<PoolFile> {
 //     await this._run(downloadAssets, this.assets);
 //   }
 // }
+
+export class DownloadPoolWithCleanup extends DownloadPool {
+  onCleanup: () => Promise<void>;
+  constructor(
+    files: PoolFile[],
+    concurrency: number,
+    onCleanup: () => Promise<void>,
+  ) {
+    super(files, concurrency);
+    this.onCleanup = onCleanup;
+  }
+
+  async run() {
+    await this._run(downloadFile, this.files);
+    await this.onCleanup();
+  }
+}
