@@ -9,7 +9,7 @@ export async function fetchJson<T>(url: string): Promise<T> {
   return await (await fetch(url)).json();
 }
 
-export async function downloadFile(file: { url: string; path: string }) {
+export async function downloadFile(file: PoolFile) {
   try {
     await ensureDir(path.dirname(file.path), true);
     const res = await fetch(file.url);

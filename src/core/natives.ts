@@ -1,18 +1,12 @@
-import { Library, Native, PoolFile, Version } from "../utils/types";
+import { Native, PoolFile, Version } from "../utils/types";
 import path from "path";
 import { ensureDir } from "../utils/fs";
 import { isNeeded } from "../utils/rules";
 import { os } from "../utils/systemInfo";
-import { DownloadPool } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
-import { unzipAll } from "../utils/unzip";
+import { DownloadAndUnzipPool } from "../utils/unzip";
 
-export async function download(destination: string, versionManifest: Version) {
-  const nativesPath = path.join(destination);
-  await ensureDir(nativesPath);
-  const tempNativesPath = await getTempFolder("natives");
-
-  // Download archives to a temp folder
+async function getNatives(versionManifest: Version, tempNativesPath: string) {
   const files: PoolFile[] = [];
 
   for (const key in versionManifest.libraries) {
@@ -27,40 +21,34 @@ export async function download(destination: string, versionManifest: Version) {
               library.downloads.classifiers["natives-macos"]
             : library.downloads.classifiers[`natives-${os()}`];
 
-        const name = native.path.split("/").pop();
+        const destination = path.join(
+          tempNativesPath,
+          path.basename(native.path),
+        );
 
-        files.push({ url: native.url, path: path.join(tempNativesPath, name) });
+        files.push({ url: native.url, path: destination });
       }
     }
   }
 
-  const dPool = new DownloadPool(files, 5);
+  return files;
+}
 
-  await dPool.run();
+export async function NativesDownloader(
+  nativesPath: string,
+  versionManifest: Version,
+) {
+  await ensureDir(nativesPath, true);
+  const tempNativesPath = await getTempFolder("natives");
 
-  // Extract every archives into the natives folder
-  for (const key in files) {
-    if (Object.prototype.hasOwnProperty.call(files, key)) {
-      const file = files[key];
-      if (file) unzipAll(file.path, nativesPath);
-    }
-  }
+  const natives = await getNatives(versionManifest, tempNativesPath);
 
-  // for (const key in versionManifest.libraries) {
-  //   if (Object.prototype.hasOwnProperty.call(versionManifest.libraries, key)) {
-  //     const library = versionManifest.libraries[key];
+  const pool = new DownloadAndUnzipPool(
+    natives,
+    5,
+    nativesPath,
+    tempNativesPath,
+  );
 
-  //     if (library.downloads && library.downloads.classifiers) {
-  //       if (parseRule(library)) continue;
-
-  //       const native: Native =
-  //         this.getOS() === "osx"
-  //           ? library.downloads.classifiers["natives-osx"] ||
-  //             library.downloads.classifiers["natives-macos"]
-  //           : library.downloads.classifiers[`natives-${os()}`];
-
-  //       const name = native.path.split("/").pop();
-  //     }
-  //   }
-  // }
+  return pool;
 }
