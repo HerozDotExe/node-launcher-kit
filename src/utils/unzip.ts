@@ -29,7 +29,6 @@ export class DownloadAndUnzipPool extends Task<PoolFile> {
 
   async downloadAndUnzip(file: PoolFile) {
     const tempFile = path.join(this.tempPath, path.basename(file.path));
-    console.log(tempFile)
     await downloadFile({
       url: file.url,
       path: tempFile,
