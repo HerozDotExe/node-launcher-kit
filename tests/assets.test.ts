@@ -25,7 +25,11 @@ test(
   async () => {
     const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
     const assetsDownloader = await nlk.core.AssetsDownloader(assetsPath, versionManifest);
-    assetsDownloader.progressCallback = console.log
+    assetsDownloader.on("completed", () => {
+      console.log(
+        `${assetsDownloader.done}/${assetsDownloader.total} | ${assetsDownloader.doneSize}/${assetsDownloader.totalSize}`,
+      );
+    });
     await assetsDownloader.run()
 
 
