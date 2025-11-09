@@ -1,8 +1,5 @@
 import path from "path";
-import {
-  DownloadPoolWithCleanup,
-  fetchJson,
-} from "../utils/fetch";
+import { DownloadPool, fetchJson } from "../utils/fetch";
 import fs from "fs/promises";
 import {
   FilesList,
@@ -41,6 +38,7 @@ export async function JavaDownloader(
         files.push({
           url: element.downloads.raw.url,
           path: path.join(destination, key),
+          size: element.downloads.raw.size,
         });
       } else if (element.type === "directory") {
         await fs.mkdir(path.join(destination, key));
@@ -48,12 +46,11 @@ export async function JavaDownloader(
     }
   }
 
-  const dPool = new DownloadPoolWithCleanup(files, 5, async () => {
+  const pool = new DownloadPool(files, { concurrency: 5 }, async () => {
     if (process.platform !== "win32") {
       await fs.chmod(path.join(destination, "bin/java"), 0o777);
-      console.log("chmoded")
     }
   });
 
-  return dPool;
+  return pool;
 }

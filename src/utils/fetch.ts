@@ -1,9 +1,9 @@
 import fs from "fs";
 import { pipeline } from "stream/promises";
 import { PoolFile } from "./types";
-import { Task } from "./task";
 import { ensureDir } from "./fs";
 import path from "path";
+import PQueue, { Options } from "p-queue";
 
 export async function fetchJson<T>(url: string): Promise<T> {
   return await (await fetch(url)).json();
@@ -24,94 +24,40 @@ export async function downloadFile(file: PoolFile) {
     return;
   }
 }
+export class DownloadPool extends PQueue {
+  done = 0;
+  total = 0;
+  doneSize = 0;
+  totalSize = 0;
+  elements: PoolFile[];
+  cleanup: () => Promise<void>;
 
-// export class DownloadPool {
-//   files: PoolFiles;
-//   concurrency: number;
-//   controller: AbortController;
-//   queue?: pQueue;
-
-//   done: number;
-//   total: number;
-//   progressCallback: (done: number, total: number) => void;
-
-//   constructor(
-//     files: PoolFiles,
-//     concurrentDownloads = 5,
-//   ) {
-//     this.files = files;
-//     this.concurrency = concurrentDownloads;
-//     this.controller = new AbortController();
-//     this.queue = new pQueue({ concurrency: this.concurrency });
-//     this.done = 0;
-//     this.total = files.length;
-//   }
-
-//   async run() {
-//     try {
-//       for (const file of this.files) {
-//         this.queue.add(async () => {
-//           await downloadFile(file, this.controller.signal);
-//         });
-//       }
-//     } catch (error) {
-//       if (error.name !== "AbortError") throw error;
-//       return;
-//     }
-
-//     this.queue.on("completed", () => {
-//       this.done++;
-//       this.progressCallback(this.done, this.total);
-//     });
-
-//     await this.queue.onIdle();
-//   }
-
-//   cancel() {
-//     this.queue.clear();
-//     this.controller.abort();
-//   }
-// }
-
-export class DownloadPool extends Task<PoolFile> {
-  files: PoolFile[];
-
-  constructor(files: PoolFile[], concurrency: number) {
-    super(concurrency);
-    this.files = files;
-    this.total = files.length;
-  }
-
-  async run() {
-    await this._run(downloadFile, this.files);
-  }
-}
-
-// export class AssetsDownloader extends DownloadPool {
-//   assets: PoolFile[];
-//   constructor(assets: PoolFile[], concurrency: number) {
-//     super(assets, concurrency);
-//     this.assets = assets;
-//   }
-
-//   async run() {
-//     await this._run(downloadAssets, this.assets);
-//   }
-// }
-
-export class DownloadPoolWithCleanup extends DownloadPool {
-  onCleanup: () => Promise<void>;
   constructor(
-    files: PoolFile[],
-    concurrency: number,
-    onCleanup: () => Promise<void>,
+    elements: PoolFile[],
+    options?: Options<null, null>,
+    cleanup?: () => Promise<void>,
   ) {
-    super(files, concurrency);
-    this.onCleanup = onCleanup;
+    super(options);
+    this.elements = elements;
+    this.total = this.elements.length;
+    this.cleanup = cleanup;
   }
 
   async run() {
-    await this._run(downloadFile, this.files);
-    await this.onCleanup();
+    for (const element of this.elements) {
+      this.totalSize += element.size;
+
+      this.add(async () => {
+        await downloadFile(element);
+        // update status here to ensure that it is run before "completed" events listeners
+        this.done++;
+        this.doneSize += element.size;
+      });
+    }
+
+    await this.onIdle();
+    if (this.cleanup) {
+      await this.cleanup();
+    }
   }
 }

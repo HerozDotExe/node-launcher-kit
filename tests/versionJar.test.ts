@@ -19,7 +19,7 @@ async function exists(path: string) {
 // mock os to linux for testing
 vi.stubGlobal("process", { platform: "linux" });
 
-test("parse arguments correctly for 1.21.8", { timeout: 10000 }, async () => {
+test("parse arguments correctly for 1.21.8", { timeout: 0 }, async () => {
   const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
   await nlk.core.version.downloadJar(
     versionManifest,

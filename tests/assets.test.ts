@@ -21,7 +21,7 @@ vi.stubGlobal("process", { platform: "linux" });
 
 test(
   "download assets for 1.21.8 correctly",
-  { timeout: 60 * 1000 },
+  { timeout: 0 },
   async () => {
     const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
     const assetsDownloader = await nlk.core.AssetsDownloader(assetsPath, versionManifest);

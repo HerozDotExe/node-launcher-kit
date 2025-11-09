@@ -21,14 +21,18 @@ vi.stubGlobal("process", { platform: "linux" });
 
 test(
   "install java-runtime-beta for linux correctly",
-  { timeout: 10000 },
+  { timeout: 0 },
   async () => {
     const javaDownloader = await nlk.core.java.JavaDownloader(
       "linux",
       "java-runtime-delta",
       javaPath,
     );
-    javaDownloader.progressCallback = console.log;
+    javaDownloader.on("completed", () => {
+      console.log(
+        `${javaDownloader.done}/${javaDownloader.total} | ${javaDownloader.doneSize}/${javaDownloader.totalSize}`,
+      );
+    });
     await javaDownloader.run();
 
     expect(

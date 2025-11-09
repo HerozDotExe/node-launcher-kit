@@ -4,7 +4,10 @@ import { AssetIndex, PoolFile, Version } from "../utils/types";
 import fs from "fs/promises";
 import { downloadFile, DownloadPool } from "../utils/fetch";
 
-export async function AssetsDownloader(destination: string, versionManifest: Version) {
+export async function AssetsDownloader(
+  destination: string,
+  versionManifest: Version,
+) {
   await ensureDir(path.join(destination, "indexes"));
   await ensureDir(path.join(destination, "objects"));
 
@@ -37,11 +40,11 @@ export async function AssetsDownloader(destination: string, versionManifest: Ver
 
       await ensureDir(path.dirname(assetPath));
 
-      files.push({ url: assetURL, path: assetPath });
+      files.push({ url: assetURL, path: assetPath, size: asset.size });
     }
   }
 
-  const dPool = new DownloadPool(files, 5);
+  const pool = new DownloadPool(files, { concurrency: 5 });
 
-  return dPool;
+  return pool;
 }

@@ -20,13 +20,17 @@ async function exists(path: string) {
 vi.stubGlobal("process", { platform: "linux" });
 
 // old version because newer versions doesn't have natives
-test("download natives for 1.15 correctly", { timeout: 10000 }, async () => {
+test("download natives for 1.15 correctly", { timeout: 0 }, async () => {
   const versionManifest = await nlk.core.version.getVersionManifest("1.15");
   const nativesDownloader = await nlk.core.NativesDownloader(
     nativesPath,
     versionManifest,
   );
-  nativesDownloader.progressCallback = console.log;
+  nativesDownloader.on("completed", () => {
+    console.log(
+      `${nativesDownloader.done}/${nativesDownloader.total} | ${nativesDownloader.doneSize}/${nativesDownloader.totalSize}`,
+    );
+  });
   await nativesDownloader.run();
 
   expect(

@@ -1,28 +1,25 @@
 import AdmZip from "adm-zip";
 import { PoolFile } from "./types";
-import { Task } from "./task";
-import { downloadFile } from "./fetch";
+import { downloadFile, DownloadPool } from "./fetch";
 import path from "path";
+import { Options } from "p-queue";
 
 export function unzipAll(from: string, to: string) {
   const zip = new AdmZip(from);
   zip.extractAllTo(to, true);
 }
 
-export class DownloadAndUnzipPool extends Task<PoolFile> {
-  files: PoolFile[];
-  tempPath: string;
+export class DownloadAndUnzipPool extends DownloadPool {
   destination: string;
+  tempPath: string;
 
   constructor(
-    files: PoolFile[],
-    concurrency: number,
+    elements: PoolFile[],
     destination: string,
     tempPath: string,
+    options?: Options<null, null>,
   ) {
-    super(concurrency);
-    this.files = files;
-    this.total = files.length;
+    super(elements, options);
     this.tempPath = tempPath;
     this.destination = destination;
   }
@@ -37,8 +34,17 @@ export class DownloadAndUnzipPool extends Task<PoolFile> {
   }
 
   async run() {
-    await this._run(async (file: PoolFile) => {
-      await this.downloadAndUnzip(file);
-    }, this.files);
+    for (const element of this.elements) {
+      this.totalSize += element.size;
+
+      this.add(async () => {
+        await this.downloadAndUnzip(element);
+        // update status here to ensure that it is run before "completed" events listeners
+        this.done++;
+        this.doneSize += element.size;
+      });
+    }
+
+    await this.onIdle();
   }
 }

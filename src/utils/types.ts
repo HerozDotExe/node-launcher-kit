@@ -59,7 +59,7 @@ export type FilesList = {
   };
 };
 
-export type PoolFile = { url: string; path: string };
+export type PoolFile = { url: string; path: string; size?: number };
 
 export type Versions = {
   latest: { release: string; snapshot: string };

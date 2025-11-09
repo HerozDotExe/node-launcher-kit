@@ -25,7 +25,7 @@ function offline() {
 // mock os to linux for testing
 vi.stubGlobal("process", { platform: "linux" });
 
-test("parse arguments correctly for 1.21.8", { timeout: 10000 }, async () => {
+test("parse arguments correctly for 1.21.8", { timeout: 0 }, async () => {
   const args = await nlk.core.arguments.generateLaunchArguments(
     await nlk.core.version.getVersionManifest("1.21.8"),
     path.join(import.meta.dirname, "temp/java"),

@@ -13,6 +13,7 @@ export function getLibraries(versionManifest: Version, librariesRoot: string) {
         libs.push({
           url: library.downloads.artifact.url,
           path: path.join(librariesRoot, library.downloads.artifact.path),
+          size: library.downloads.artifact.size,
         });
       }
     }
@@ -27,7 +28,7 @@ export async function LibrariesDownloader(
 ) {
   const libs = getLibraries(versionManifest, librariesRoot);
 
-  const dPool = new DownloadPool(libs, 5);
+  const dPool = new DownloadPool(libs, { concurrency: 5 });
 
   return dPool;
 }

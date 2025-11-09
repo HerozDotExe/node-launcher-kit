@@ -26,7 +26,7 @@ async function getNatives(versionManifest: Version, tempNativesPath: string) {
           path.basename(native.path),
         );
 
-        files.push({ url: native.url, path: destination });
+        files.push({ url: native.url, path: destination, size: native.size });
       }
     }
   }
@@ -43,12 +43,9 @@ export async function NativesDownloader(
 
   const natives = await getNatives(versionManifest, tempNativesPath);
 
-  const pool = new DownloadAndUnzipPool(
-    natives,
-    5,
-    nativesPath,
-    tempNativesPath,
-  );
+  const pool = new DownloadAndUnzipPool(natives, nativesPath, tempNativesPath, {
+    concurrency: 5,
+  });
 
   return pool;
 }

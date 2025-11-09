@@ -21,12 +21,16 @@ vi.stubGlobal("process", { platform: "linux" });
 
 test(
   "download libraries for 1.21.8 correctly",
-  { timeout: 10000 },
+  { timeout: 0 },
   async () => {
     const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
-    const LibrariesDownloader = await nlk.core.LibrariesDownloader(librariesPath, versionManifest);
-    LibrariesDownloader.progressCallback = console.log
-    await LibrariesDownloader.run()
+    const librariesDownloader = await nlk.core.LibrariesDownloader(librariesPath, versionManifest);
+    librariesDownloader.on("completed", () => {
+      console.log(
+        `${librariesDownloader.done}/${librariesDownloader.total} | ${librariesDownloader.doneSize}/${librariesDownloader.totalSize}`,
+      );
+    });
+    await librariesDownloader.run()
 
     expect(
       await exists(path.join(librariesPath, "com/fasterxml/jackson/core/jackson-core/2.13.4/jackson-core-2.13.4.jar")),

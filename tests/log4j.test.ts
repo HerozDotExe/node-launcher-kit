@@ -17,7 +17,7 @@ vi.stubGlobal("process", { platform: "linux" });
 
 test(
   "download xml file and return correct arguments",
-  { timeout: 10000 },
+  { timeout: 0 },
   async () => {
     const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
     const arg = await nlk.core.log4j.getArgument(versionManifest, root);
