@@ -4,33 +4,47 @@ import { downloadFile, DownloadPool } from "./fetch";
 import path from "path";
 import { Options } from "p-queue";
 
-export function unzipAll(from: string, to: string) {
+export function unzipAll(from: string, to: string, filters: string[]) {
   const zip = new AdmZip(from);
-  zip.extractAllTo(to, true);
+
+  for (const entry of zip.getEntries()) {
+    let shouldSkip = false;
+    for (const filter of filters) {
+      if (entry.entryName.includes(filter)) {
+        shouldSkip = true;
+        console.log("skipping", entry.entryName)
+      }
+    }
+    if (shouldSkip) continue;
+    zip.extractEntryTo(entry.entryName, to);
+  }
 }
 
 export class DownloadAndUnzipPool extends DownloadPool {
   destination: string;
   tempPath: string;
+  filters: string[];
 
   constructor(
     elements: PoolFile[],
     destination: string,
     tempPath: string,
     options?: Options<null, null>,
+    filters: string[] = [],
   ) {
     super(elements, options);
     this.tempPath = tempPath;
     this.destination = destination;
+    this.filters = filters;
   }
 
-  async downloadAndUnzip(file: PoolFile) {
+  async downloadAndUnzip(file: PoolFile, filters: string[]) {
     const tempFile = path.join(this.tempPath, path.basename(file.path));
     await downloadFile({
       url: file.url,
       path: tempFile,
     });
-    unzipAll(tempFile, this.destination);
+    unzipAll(tempFile, this.destination, filters);
   }
 
   async run() {
@@ -38,7 +52,7 @@ export class DownloadAndUnzipPool extends DownloadPool {
       this.totalSize += element.size;
 
       this.add(async () => {
-        await this.downloadAndUnzip(element);
+        await this.downloadAndUnzip(element, this.filters);
         // update status here to ensure that it is run before "completed" events listeners
         this.done++;
         this.doneSize += element.size;

@@ -43,9 +43,15 @@ export async function NativesDownloader(
 
   const natives = await getNatives(versionManifest, tempNativesPath);
 
-  const pool = new DownloadAndUnzipPool(natives, nativesPath, tempNativesPath, {
-    concurrency: 5,
-  });
+  const pool = new DownloadAndUnzipPool(
+    natives,
+    nativesPath,
+    tempNativesPath,
+    {
+      concurrency: 5,
+    },
+    [".git", "META-INF", ".sha1"],
+  );
 
   return pool;
 }
