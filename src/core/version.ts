@@ -1,9 +1,9 @@
 import { downloadFile, fetchJson } from "../utils/fetch";
-import { exists } from "../utils/fs";
+import { exists, readJson } from "../utils/fs";
 import { Versions, Version } from "../utils/types";
 import path from "path";
 
-export async function getVersionManifest(versionString: string) {
+export async function getVersionManifestUrl(versionString: string) {
   const versions = await (
     await fetchJson<Versions>(
       "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json",
@@ -20,20 +20,36 @@ export async function getVersionManifest(versionString: string) {
     }
   }
 
-  const versionManifest = await fetchJson<Version>(versionManifestURL);
-
-  return versionManifest;
+  return versionManifestURL;
 }
 
-export async function downloadJar(versionManifest: Version, gameRoot: string) {
-  const destination = path.join(
-    gameRoot,
-    "versions",
-    `${versionManifest.id}.jar`,
-  );
+export async function downloadJson(versionString: string, to: string) {
+  const destination = path.join(to, `${versionString}.json`);
+  if (!(await exists(destination)))
+    await downloadFile({
+      url: await getVersionManifestUrl(versionString),
+      path: destination,
+    });
+}
+
+export async function downloadJar(versionManifest: Version, to: string) {
+  const destination = path.join(to, `${versionManifest.id}.jar`);
   if (!(await exists(destination)))
     await downloadFile({
       url: versionManifest.downloads.client.url,
       path: destination,
     });
+}
+
+export async function getVersionManifest(
+  versionString: string,
+  to: string,
+): Promise<Version> {
+  const destination = path.join(to, `${versionString}.json`);
+  if (await exists(destination)) {
+    return await readJson(destination);
+  }
+
+  await downloadJson(versionString, to);
+  return await readJson(destination);
 }

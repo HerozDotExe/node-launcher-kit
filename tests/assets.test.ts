@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs/promises";
 
 const assetsPath = path.join(import.meta.dirname, "temp/assets");
+const root = path.join(import.meta.dirname, "temp");
 await fs.rm(assetsPath, { recursive: true, force: true });
 await fs.mkdir(assetsPath, { recursive: true });
 
@@ -23,7 +24,7 @@ test(
   "download assets for 1.21.8 correctly",
   { timeout: 0 },
   async () => {
-    const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
+    const versionManifest = await nlk.core.version.getVersionManifest("1.21.8", root);
     const assetsDownloader = await nlk.core.AssetsDownloader(assetsPath, versionManifest);
     assetsDownloader.on("completed", () => {
       console.log(

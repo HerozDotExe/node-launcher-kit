@@ -19,7 +19,7 @@ test(
   "download xml file and return correct arguments",
   { timeout: 0 },
   async () => {
-    const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
+    const versionManifest = await nlk.core.version.getVersionManifest("1.21.8", root);
     const arg = await nlk.core.log4j.getArgument(versionManifest, root);
 
     expect(arg, "correct arg returned").toBe(

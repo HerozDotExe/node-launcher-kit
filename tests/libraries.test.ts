@@ -4,6 +4,7 @@ import path from "path";
 import fs from "fs/promises";
 
 const librariesPath = path.join(import.meta.dirname, "temp/libraries");
+const root = path.join(import.meta.dirname, "temp");
 await fs.rm(librariesPath, { recursive: true, force: true });
 await fs.mkdir(librariesPath, { recursive: true });
 
@@ -23,7 +24,7 @@ test(
   "download libraries for 1.21.8 correctly",
   { timeout: 0 },
   async () => {
-    const versionManifest = await nlk.core.version.getVersionManifest("1.21.8");
+    const versionManifest = await nlk.core.version.getVersionManifest("1.21.8", root);
     const librariesDownloader = await nlk.core.LibrariesDownloader(librariesPath, versionManifest);
     librariesDownloader.on("completed", () => {
       console.log(

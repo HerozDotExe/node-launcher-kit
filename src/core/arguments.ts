@@ -73,12 +73,16 @@ function parseArg(
   return this;
 }
 
-function generateClassPaths(versionManifest: Version, librariesRoot: string) {
+function generateClassPaths(
+  versionManifest: Version,
+  librariesRoot: string,
+  versionJar: string,
+) {
   const libs = getLibraries(versionManifest, librariesRoot).map(
     (lib) => lib.path,
   );
 
-  libs.push(path.join(librariesRoot, "..", "versions", `${versionManifest.id}.jar`))
+  libs.push(versionJar);
 
   return libs.join(path.delimiter);
 }
@@ -87,6 +91,7 @@ export async function generateLaunchArguments(
   versionManifest: Version,
   javaRoot: string,
   gameRoot: string,
+  versionJar: string,
   auth: Auth,
   options = {
     minRam: "2G",
@@ -103,6 +108,7 @@ export async function generateLaunchArguments(
   const classPaths = generateClassPaths(
     versionManifest,
     path.join(gameRoot, "libraries"),
+    versionJar,
   );
 
   function p(args: string[], arg: Argument) {
@@ -116,7 +122,7 @@ export async function generateLaunchArguments(
     p(game, arg);
   }
 
-  const log4j = await getArgument(versionManifest, gameRoot)
+  const log4j = await getArgument(versionManifest, gameRoot);
 
   return `${getJavaExecutable(javaRoot)} ${jvm.join(" ")}${options.customJvm === "" ? "" : ` ${options.customJvm}`} -Xms${options.minRam} -Xmx${options.maxRam} -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M ${log4j} ${versionManifest.mainClass} ${game.join(" ")}`;
 }
