@@ -4,5 +4,8 @@ export default defineConfig({
   entry: ["src/index.ts"],
   target: "node22",
   format: ["cjs", "esm"],
-  dts: true
+  dts: true,
+  banner: {
+    js: "import { createRequire } from 'module'; const require = createRequire(import.meta.url);",
+  },
 });
