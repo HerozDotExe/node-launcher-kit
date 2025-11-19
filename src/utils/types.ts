@@ -175,3 +175,5 @@ export type Auth = {
     clientId: string;
   };
 };
+
+export type LaunchArguments = { command: string; args: string[] }

@@ -122,7 +122,29 @@ export async function generateLaunchArguments(
     p(game, arg);
   }
 
+  if (options.customJvm !== "") {
+    for (const arg of options.customJvm.split(" ")) {
+      jvm.push(arg);
+    }
+  }
+
   const log4j = await getArgument(versionManifest, gameRoot);
 
-  return `${getJavaExecutable(javaRoot)} ${jvm.join(" ")}${options.customJvm === "" ? "" : ` ${options.customJvm}`} -Xms${options.minRam} -Xmx${options.maxRam} -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -XX:G1NewSizePercent=20 -XX:G1ReservePercent=20 -XX:MaxGCPauseMillis=50 -XX:G1HeapRegionSize=32M ${log4j} ${versionManifest.mainClass} ${game.join(" ")}`;
+  return {
+    command: getJavaExecutable(javaRoot),
+    args: [
+      ...jvm,
+      `-Xms${options.minRam}`,
+      `-Xmx${options.maxRam}`,
+      "-XX:+UnlockExperimentalVMOptions",
+      "-XX:+UseG1GC",
+      "-XX:G1NewSizePercent=20",
+      "-XX:G1ReservePercent=20",
+      "-XX:MaxGCPauseMillis=50",
+      "-XX:G1HeapRegionSize=32M",
+      log4j,
+      versionManifest.mainClass,
+      ...game,
+    ],
+  };
 }
