@@ -1,5 +1,5 @@
 import { expect, test, vi } from "vitest";
-import * as nlk from "../dist/index.js";
+import * as nlk from "../../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 

@@ -9,6 +9,7 @@ import {
   RuntimeOS,
 } from "../utils/types";
 import { os } from "../utils/systemInfo";
+import { ensureDir } from "../utils/fs";
 
 export function getJavaExecutable(javaRoot: string, show = false) {
   const executable = `${os() === "windows" && show ? "javaw" : "java"}${os() === "windows" ? ".exe" : ""}`;
@@ -41,7 +42,7 @@ export async function JavaDownloader(
           size: element.downloads.raw.size,
         });
       } else if (element.type === "directory") {
-        await fs.mkdir(path.join(destination, key));
+        await ensureDir(path.join(destination, key), true);
       }
     }
   }

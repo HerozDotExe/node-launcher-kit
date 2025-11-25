@@ -1,10 +1,10 @@
 import { expect, test, vi } from "vitest";
-import * as nlk from "../dist/index.js";
+import * as nlk from "../../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 
 const javaPath = path.join(import.meta.dirname, "temp/java");
-await fs.rm(javaPath, { recursive: true });
+await fs.rm(javaPath, { recursive: true, force: true });
 await fs.mkdir(javaPath, { recursive: true });
 
 async function exists(path: string) {

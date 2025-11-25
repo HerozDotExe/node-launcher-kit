@@ -8,3 +8,15 @@ export function os() {
       return "linux";
   }
 }
+
+export function arch() {
+  switch(process.arch) {
+    case "arm":
+    case "arm64":
+      return "arm"
+    case "x64":
+      return "x64"
+    default:
+      return "x86"
+  }
+}

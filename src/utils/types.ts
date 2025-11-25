@@ -176,4 +176,13 @@ export type Auth = {
   };
 };
 
-export type LaunchArguments = { command: string; args: string[] }
+export type LaunchArguments = { command: string; args: string[] };
+
+export type Paths = {
+  root: string
+  version?: string
+  assets?: string
+  libraries?: string
+  natives?: string
+  java?: string
+}

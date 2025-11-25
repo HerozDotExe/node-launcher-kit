@@ -8,8 +8,8 @@ export async function AssetsDownloader(
   destination: string,
   versionManifest: Version,
 ) {
-  await ensureDir(path.join(destination, "indexes"));
-  await ensureDir(path.join(destination, "objects"));
+  await ensureDir(path.join(destination, "indexes"), true);
+  await ensureDir(path.join(destination, "objects"), true);
 
   const assetIndexPath = path.join(
     destination,

@@ -141,7 +141,8 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Test temp folder
-tests/temp
+tests/core/temp
+tests/instance/temp
 
 # Test files
 handler.js
