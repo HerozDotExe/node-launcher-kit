@@ -41,8 +41,12 @@ export class Instance {
   modLoader: { name: string; version: string };
   auth: Auth;
   paths: Paths;
-
+  args: { java: string; game: string };
   versionManifest: Version;
+
+  constructor() {
+    this.args = { java: "", game: "" };
+  }
 
   setVersion(version: string) {
     this.version = version;
@@ -78,6 +82,11 @@ export class Instance {
 
   setAuth(auth: Auth) {
     this.auth = auth;
+  }
+
+  setArgs({ java, game }: { java?: string; game?: string }) {
+    this.args.java = java || "";
+    this.args.game = game || "";
   }
 
   async install() {
@@ -140,6 +149,7 @@ export class Instance {
       path.join(this.paths.root),
       path.join(this.paths.root, `${this.version}.jar`),
       this.auth,
+      { customGameArgs: this.args.game, customJvmArgs: this.args.java },
     );
 
     const process = core.launch(args, this.paths.root);

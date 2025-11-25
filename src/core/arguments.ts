@@ -93,10 +93,11 @@ export async function generateLaunchArguments(
   gameRoot: string,
   versionJar: string,
   auth: Auth,
-  options = {
-    minRam: "2G",
-    maxRam: "2G",
-    customJvm: "",
+  options: {
+    minRam?: string;
+    maxRam?: string;
+    customJvmArgs?: string;
+    customGameArgs?: string;
   },
 ) {
   // Log4j /!\
@@ -122,9 +123,15 @@ export async function generateLaunchArguments(
     p(game, arg);
   }
 
-  if (options.customJvm !== "") {
-    for (const arg of options.customJvm.split(" ")) {
+  if (options.customJvmArgs !== "") {
+    for (const arg of options.customJvmArgs.split(" ")) {
       jvm.push(arg);
+    }
+  }
+
+  if (options.customGameArgs !== "") {
+    for (const arg of options.customGameArgs.split(" ")) {
+      game.push(arg);
     }
   }
 
@@ -134,8 +141,8 @@ export async function generateLaunchArguments(
     command: getJavaExecutable(javaRoot),
     args: [
       ...jvm,
-      `-Xms${options.minRam}`,
-      `-Xmx${options.maxRam}`,
+      `-Xms${options.minRam || "2G"}`,
+      `-Xmx${options.maxRam || "2G"}`,
       "-XX:+UnlockExperimentalVMOptions",
       "-XX:+UseG1GC",
       "-XX:G1NewSizePercent=20",
