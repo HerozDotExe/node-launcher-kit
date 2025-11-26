@@ -91,7 +91,7 @@ export async function generateLaunchArguments(
   versionManifest: Version,
   javaRoot: string,
   gameRoot: string,
-  versionJar: string,
+  versionRoot: string,
   auth: Auth,
   options: {
     minRam?: string;
@@ -109,7 +109,7 @@ export async function generateLaunchArguments(
   const classPaths = generateClassPaths(
     versionManifest,
     path.join(gameRoot, "libraries"),
-    versionJar,
+    path.join(versionRoot, `${versionManifest.id}.jar`),
   );
 
   function p(args: string[], arg: Argument) {
@@ -135,7 +135,7 @@ export async function generateLaunchArguments(
     }
   }
 
-  const log4j = await getArgument(versionManifest, gameRoot);
+  const log4j = await getArgument(versionManifest, versionRoot);
 
   return {
     command: getJavaExecutable(javaRoot),

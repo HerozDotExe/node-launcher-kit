@@ -62,7 +62,7 @@ export class Instance {
     if (typeof paths === "string") {
       this.paths = {
         root: paths,
-        version: path.join(paths),
+        version: path.join(paths, "version", this.version),
         assets: path.join(paths, "assets"),
         java: path.join(paths, "java"),
         libraries: path.join(paths, "libraries"),
@@ -71,7 +71,7 @@ export class Instance {
     } else {
       this.paths = {
         root: paths.root,
-        version: paths.version || path.join(paths.root),
+        version: paths.version || path.join(paths.root, "version", this.version),
         assets: paths.assets || path.join(paths.root, "assets"),
         java: paths.java || path.join(paths.root, "java"),
         libraries: paths.libraries || path.join(paths.root, "libraries"),
@@ -92,9 +92,9 @@ export class Instance {
   async install() {
     this.versionManifest = await core.version.getVersionManifest(
       this.version,
-      this.paths.root,
+      this.paths.version,
     );
-    await core.version.downloadJar(this.versionManifest, this.paths.root);
+    await core.version.downloadJar(this.versionManifest, this.paths.version);
 
     const librariesDownloader = await core.LibrariesDownloader(
       this.paths.libraries,
@@ -144,10 +144,10 @@ export class Instance {
 
   async launch() {
     const args = await core.arguments.generateLaunchArguments(
-      await core.version.getVersionManifest("1.21.8", this.paths.root),
-      path.join(this.paths.java),
-      path.join(this.paths.root),
-      path.join(this.paths.root, `${this.version}.jar`),
+      await core.version.getVersionManifest(this.version, this.paths.version),
+      this.paths.java,
+      this.paths.root,
+      this.paths.version,
       this.auth,
       { customGameArgs: this.args.game, customJvmArgs: this.args.java },
     );
