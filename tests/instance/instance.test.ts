@@ -16,6 +16,19 @@ test("launch game", { timeout: 0 }, async () => {
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
 
+  instance.on("progress", console.log)
+
   await instance.install();
-  await instance.launch();
+  const p = await instance.launch();
+
+  p.stdout.on("data", (d: Buffer) => {
+    console.log(d.toString());
+  });
+
+  await new Promise((res) => {
+    p.on("close", () => {
+      console.log("closed");
+      res(0);
+    });
+  });
 });

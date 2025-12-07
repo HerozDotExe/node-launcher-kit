@@ -2,6 +2,7 @@ import { Auth, Paths, Version } from "../utils/types";
 import * as core from "../core";
 import path from "path";
 import { os, arch } from "../utils/systemInfo";
+import { EventEmitter } from "node:events";
 
 function getJavaOs() {
   switch (os()) {
@@ -36,7 +37,11 @@ function getJavaOs() {
   }
 }
 
-export class Instance {
+interface InstanceEvents {
+  progress: [type: string, done: number, total: number, doneSize: number, totalSize: number];
+}
+
+export class Instance extends EventEmitter<InstanceEvents> {
   version: string;
   modLoader: { name: string; version: string };
   auth: Auth;
@@ -45,6 +50,7 @@ export class Instance {
   versionManifest: Version;
 
   constructor() {
+    super();
     this.args = { java: "", game: "" };
   }
 
@@ -71,7 +77,8 @@ export class Instance {
     } else {
       this.paths = {
         root: paths.root,
-        version: paths.version || path.join(paths.root, "version", this.version),
+        version:
+          paths.version || path.join(paths.root, "version", this.version),
         assets: paths.assets || path.join(paths.root, "assets"),
         java: paths.java || path.join(paths.root, "java"),
         libraries: paths.libraries || path.join(paths.root, "libraries"),
@@ -101,8 +108,13 @@ export class Instance {
       this.versionManifest,
     );
     librariesDownloader.on("completed", () => {
-      console.log(
-        `${librariesDownloader.done}/${librariesDownloader.total} | ${librariesDownloader.doneSize}/${librariesDownloader.totalSize}`,
+      this.emit(
+        "progress",
+        "libraries",
+        librariesDownloader.done,
+        librariesDownloader.total,
+        librariesDownloader.doneSize,
+        librariesDownloader.totalSize,
       );
     });
     await librariesDownloader.run();
@@ -112,8 +124,13 @@ export class Instance {
       this.versionManifest,
     );
     assetsDownloader.on("completed", () => {
-      console.log(
-        `${assetsDownloader.done}/${assetsDownloader.total} | ${assetsDownloader.doneSize}/${assetsDownloader.totalSize}`,
+      this.emit(
+        "progress",
+        "assets",
+        assetsDownloader.done,
+        assetsDownloader.total,
+        assetsDownloader.doneSize,
+        assetsDownloader.totalSize,
       );
     });
     await assetsDownloader.run();
@@ -123,8 +140,13 @@ export class Instance {
       this.versionManifest,
     );
     nativesDownloader.on("completed", () => {
-      console.log(
-        `${nativesDownloader.done}/${nativesDownloader.total} | ${nativesDownloader.doneSize}/${nativesDownloader.totalSize}`,
+      this.emit(
+        "progress",
+        "natives",
+        nativesDownloader.done,
+        nativesDownloader.total,
+        nativesDownloader.doneSize,
+        nativesDownloader.totalSize,
       );
     });
     await nativesDownloader.run();
@@ -135,8 +157,13 @@ export class Instance {
       this.paths.java,
     );
     javaDownloader.on("completed", () => {
-      console.log(
-        `${javaDownloader.done}/${javaDownloader.total} | ${javaDownloader.doneSize}/${javaDownloader.totalSize}`,
+      this.emit(
+        "progress",
+        "java",
+        javaDownloader.done,
+        javaDownloader.total,
+        javaDownloader.doneSize,
+        javaDownloader.totalSize,
       );
     });
     await javaDownloader.run();
