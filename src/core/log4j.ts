@@ -18,13 +18,13 @@ export async function getArgument(
       url: versionManifest.logging.client.file.url,
       path: xmlDestination,
     });
+  }
 
-    if (
-      hash("sha1", await fs.readFile(xmlDestination, {encoding: "utf-8"})) !==
-      versionManifest.logging.client.file.sha1
-    ) {
-      throw new Error("Wrong hash for log4j's xml config");
-    }
+  if (
+    hash("sha1", await fs.readFile(xmlDestination, { encoding: "utf-8" })) !==
+    versionManifest.logging.client.file.sha1
+  ) {
+    throw new Error("Wrong hash for log4j's xml config");
   }
 
   return versionManifest.logging.client.argument.replace(
