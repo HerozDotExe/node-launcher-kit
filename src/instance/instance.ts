@@ -48,6 +48,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
   paths: Paths;
   args: { java: string; game: string };
   versionManifest: Version;
+  javaLocation?: string
 
   constructor() {
     super();
@@ -70,7 +71,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         root: paths,
         version: path.join(paths, "version", this.version),
         assets: path.join(paths, "assets"),
-        java: path.join(paths, "java"),
+        javaRoot: path.join(paths, "java"),
         libraries: path.join(paths, "libraries"),
         natives: path.join(paths, "natives"),
       };
@@ -80,7 +81,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         version:
           paths.version || path.join(paths.root, "version", this.version),
         assets: paths.assets || path.join(paths.root, "assets"),
-        java: paths.java || path.join(paths.root, "java"),
+        javaRoot: paths.javaRoot || path.join(paths.root, "java"),
         libraries: paths.libraries || path.join(paths.root, "libraries"),
         natives: paths.natives || path.join(paths.root, "natives"),
       };
@@ -151,10 +152,12 @@ export class Instance extends EventEmitter<InstanceEvents> {
     });
     await nativesDownloader.run();
 
+    this.javaLocation = path.join(this.paths.javaRoot, this.versionManifest.javaVersion.component)
+
     const javaDownloader = await core.java.JavaDownloader(
       getJavaOs(),
       this.versionManifest.javaVersion.component,
-      this.paths.java,
+      this.paths.javaRoot,
     );
     javaDownloader.on("completed", () => {
       this.emit(
@@ -172,7 +175,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
   async launch() {
     const args = await core.arguments.generateLaunchArguments(
       await core.version.getVersionManifest(this.version, this.paths.version),
-      this.paths.java,
+      this.javaLocation,
       this.paths.root,
       this.paths.version,
       this.auth,

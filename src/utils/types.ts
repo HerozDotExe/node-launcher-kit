@@ -184,5 +184,5 @@ export type Paths = {
   assets?: string
   libraries?: string
   natives?: string
-  java?: string
+  javaRoot?: string
 }

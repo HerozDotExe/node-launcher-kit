@@ -19,7 +19,7 @@ export function getJavaExecutable(javaRoot: string, show = false) {
 export async function JavaDownloader(
   os: RuntimeOS,
   component: RuntimeComponent,
-  destination: string,
+  rootDestination: string,
 ) {
   const javaRuntimesManifests = await fetchJson<JavaRuntimesManifests>(
     "https://piston-meta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json",
@@ -30,6 +30,9 @@ export async function JavaDownloader(
     )
   ).files;
 
+  const componentDestination = path.join(rootDestination, component)
+  await ensureDir(componentDestination, true)
+
   const files: PoolFile[] = [];
 
   for (const key in javaRuntimeManifest) {
@@ -38,18 +41,18 @@ export async function JavaDownloader(
       if (element.type === "file") {
         files.push({
           url: element.downloads.raw.url,
-          path: path.join(destination, key),
+          path: path.join(componentDestination, key),
           size: element.downloads.raw.size,
         });
       } else if (element.type === "directory") {
-        await ensureDir(path.join(destination, key), true);
+        await ensureDir(path.join(componentDestination, key), true);
       }
     }
   }
 
   const pool = new DownloadPool(files, { concurrency: 5 }, async () => {
     if (process.platform !== "win32") {
-      await fs.chmod(path.join(destination, "bin/java"), 0o777);
+      await fs.chmod(path.join(componentDestination, "bin/java"), 0o777);
     }
   });
 
