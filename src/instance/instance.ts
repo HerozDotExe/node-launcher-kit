@@ -3,6 +3,7 @@ import * as core from "../core";
 import path from "path";
 import { os, arch } from "../utils/systemInfo";
 import { EventEmitter } from "node:events";
+import { InstallError, LaunchError } from "../utils/errors";
 
 function getJavaOs() {
   switch (os()) {
@@ -38,7 +39,13 @@ function getJavaOs() {
 }
 
 interface InstanceEvents {
-  progress: [type: string, done: number, total: number, doneSize: number, totalSize: number];
+  progress: [
+    type: string,
+    done: number,
+    total: number,
+    doneSize: number,
+    totalSize: number,
+  ];
 }
 
 export class Instance extends EventEmitter<InstanceEvents> {
@@ -48,11 +55,13 @@ export class Instance extends EventEmitter<InstanceEvents> {
   paths: Paths;
   args: { java: string; game: string };
   versionManifest: Version;
-  javaLocation?: string
+  javaLocation?: string;
+  ready: boolean;
 
   constructor() {
     super();
     this.args = { java: "", game: "" };
+    this.ready = false;
   }
 
   setVersion(version: string) {
@@ -97,93 +106,152 @@ export class Instance extends EventEmitter<InstanceEvents> {
     this.args.game = game || "";
   }
 
-  async install() {
+  async initialize() {
     this.versionManifest = await core.version.getVersionManifest(
       this.version,
       this.paths.version,
     );
-    await core.version.downloadJar(this.versionManifest, this.paths.version);
 
-    const librariesDownloader = await core.LibrariesDownloader(
-      this.paths.libraries,
-      this.versionManifest,
-    );
-    librariesDownloader.on("completed", () => {
-      this.emit(
-        "progress",
-        "libraries",
-        librariesDownloader.done,
-        librariesDownloader.total,
-        librariesDownloader.doneSize,
-        librariesDownloader.totalSize,
-      );
-    });
-    await librariesDownloader.run();
-
-    const assetsDownloader = await core.AssetsDownloader(
-      this.paths.assets,
-      this.versionManifest,
-    );
-    assetsDownloader.on("completed", () => {
-      this.emit(
-        "progress",
-        "assets",
-        assetsDownloader.done,
-        assetsDownloader.total,
-        assetsDownloader.doneSize,
-        assetsDownloader.totalSize,
-      );
-    });
-    await assetsDownloader.run();
-
-    const nativesDownloader = await core.NativesDownloader(
-      this.paths.natives,
-      this.versionManifest,
-    );
-    nativesDownloader.on("completed", () => {
-      this.emit(
-        "progress",
-        "natives",
-        nativesDownloader.done,
-        nativesDownloader.total,
-        nativesDownloader.doneSize,
-        nativesDownloader.totalSize,
-      );
-    });
-    await nativesDownloader.run();
-
-    this.javaLocation = path.join(this.paths.javaRoot, this.versionManifest.javaVersion.component)
-
-    const javaDownloader = await core.java.JavaDownloader(
-      getJavaOs(),
-      this.versionManifest.javaVersion.component,
+    this.javaLocation = path.join(
       this.paths.javaRoot,
+      this.versionManifest.javaVersion.component,
     );
-    javaDownloader.on("completed", () => {
-      this.emit(
-        "progress",
-        "java",
-        javaDownloader.done,
-        javaDownloader.total,
-        javaDownloader.doneSize,
-        javaDownloader.totalSize,
+  }
+
+  async install() {
+    try {
+      await this.initialize();
+      this.ready = true;
+      await core.version.downloadJar(this.versionManifest, this.paths.version);
+    } catch (original) {
+      const error = new InstallError("version", original);
+      error.throw();
+    }
+
+    try {
+      const librariesDownloader = await core.LibrariesDownloader(
+        this.paths.libraries,
+        this.versionManifest,
       );
-    });
-    await javaDownloader.run();
+
+      librariesDownloader.on("completed", () => {
+        this.emit(
+          "progress",
+          "libraries",
+          librariesDownloader.done,
+          librariesDownloader.total,
+          librariesDownloader.doneSize,
+          librariesDownloader.totalSize,
+        );
+      });
+      await librariesDownloader.run();
+    } catch (original) {
+      const error = new InstallError("libraries", original);
+      error.throw();
+    }
+
+    try {
+      const assetsDownloader = await core.AssetsDownloader(
+        this.paths.assets,
+        this.versionManifest,
+      );
+      assetsDownloader.on("completed", () => {
+        this.emit(
+          "progress",
+          "assets",
+          assetsDownloader.done,
+          assetsDownloader.total,
+          assetsDownloader.doneSize,
+          assetsDownloader.totalSize,
+        );
+      });
+      await assetsDownloader.run();
+    } catch (original) {
+      const error = new InstallError("assets", original);
+      error.throw();
+    }
+
+    try {
+      const nativesDownloader = await core.NativesDownloader(
+        this.paths.natives,
+        this.versionManifest,
+      );
+      nativesDownloader.on("completed", () => {
+        this.emit(
+          "progress",
+          "natives",
+          nativesDownloader.done,
+          nativesDownloader.total,
+          nativesDownloader.doneSize,
+          nativesDownloader.totalSize,
+        );
+      });
+      await nativesDownloader.run();
+    } catch (original) {
+      const error = new InstallError("natives", original);
+      error.throw();
+    }
+
+    try {
+      const javaDownloader = await core.java.JavaDownloader(
+        getJavaOs(),
+        this.versionManifest.javaVersion.component,
+        this.paths.javaRoot,
+      );
+      javaDownloader.on("completed", () => {
+        this.emit(
+          "progress",
+          "java",
+          javaDownloader.done,
+          javaDownloader.total,
+          javaDownloader.doneSize,
+          javaDownloader.totalSize,
+        );
+      });
+      await javaDownloader.run();
+    } catch (original) {
+      const error = new InstallError("java", original);
+      error.throw();
+    }
   }
 
   async launch() {
-    const args = await core.arguments.generateLaunchArguments(
-      await core.version.getVersionManifest(this.version, this.paths.version),
-      this.javaLocation,
-      this.paths.root,
-      this.paths.version,
-      this.auth,
-      { customGameArgs: this.args.game, customJvmArgs: this.args.java },
-    );
+    try {
+      if (!this.ready) {
+        try {
+          await this.initialize();
+        } catch (original) {
+          const error = new InstallError("version", original);
+          error.throw();
+        }
+      }
 
-    const process = core.launch(args, this.paths.root);
+      const args = await core.arguments.generateLaunchArguments(
+        await core.version.getVersionManifest(this.version, this.paths.version),
+        this.javaLocation,
+        this.paths.root,
+        this.paths.version,
+        this.auth,
+        { customGameArgs: this.args.game, customJvmArgs: this.args.java },
+      );
 
-    return process;
+      const process = core.launch(args, this.paths.root);
+
+      return process;
+    } catch (original) {
+      const error = new LaunchError(
+        {
+          version: this.version,
+          versionPath: this.paths.version,
+          javaLocation: this.javaLocation,
+          rootPath: this.paths.root,
+          auth: this.auth,
+          customGameArgs: this.args.game,
+          customJvmArgs: this.args.java,
+        },
+        original,
+      );
+      error.throw();
+    }
   }
 }

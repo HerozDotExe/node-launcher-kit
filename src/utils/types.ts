@@ -186,3 +186,13 @@ export type Paths = {
   natives?: string
   javaRoot?: string
 }
+
+export type LaunchErrorInfos = {
+      version: string;
+      versionPath: string;
+      javaLocation: string;
+      rootPath: string;
+      auth: Auth;
+      customGameArgs: string;
+      customJvmArgs: string;
+    }
