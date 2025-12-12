@@ -9,20 +9,21 @@ import { getArgument } from "./log4j";
 function fillArguments(
   arg: string,
   versionManifest: Version,
-  gameRoot: string,
+  assetsPath: string,
+  instancePath: string,
   classPaths: PoolFile[],
   auth: Auth,
 ) {
   const argumentsToFill = {
-    "${natives_directory}": path.join(gameRoot, "natives"),
+    "${natives_directory}": path.join(instancePath, "natives"),
     "${launcher_name}": "nlk",
     "${launcher_version}": packageVersion,
     "${classpath}": classPaths,
-    "${game_directory}": gameRoot,
+    "${game_directory}": instancePath,
     "${version_name}": versionManifest.id,
     "${version_type}": versionManifest.type,
     "${assets_index_name}": versionManifest.assets,
-    "${assets_root}": path.join(gameRoot, "assets"),
+    "${assets_root}": assetsPath,
     "${auth_access_token}": auth.access_token,
     "${auth_session}": auth.access_token,
     "${auth_player_name}": auth.name,
@@ -48,23 +49,24 @@ function parseArg(
   this: string[],
   arg: Argument,
   versionManifest: Version,
-  gameRoot: string,
+  assetsPath: string,
+  instancePath: string,
   classPaths: PoolFile[],
   auth: Auth,
 ) {
   if (isNeeded(arg)) {
     if (typeof arg === "string") {
       this.push(
-        fillArguments(arg, versionManifest, gameRoot, classPaths, auth),
+        fillArguments(arg, versionManifest, assetsPath, instancePath, classPaths, auth),
       );
     } else if (typeof arg.value === "string") {
       this.push(
-        fillArguments(arg.value, versionManifest, gameRoot, classPaths, auth),
+        fillArguments(arg.value, versionManifest, assetsPath, instancePath, classPaths, auth),
       );
     } else if (arg.value.length > 1) {
       for (const e of arg.value) {
         this.push(
-          fillArguments(e, versionManifest, gameRoot, classPaths, auth),
+          fillArguments(e, versionManifest, assetsPath, instancePath, classPaths, auth),
         );
       }
     }
@@ -90,7 +92,9 @@ function generateClassPaths(
 export async function generateLaunchArguments(
   versionManifest: Version,
   javaRoot: string,
-  gameRoot: string,
+  instancePath: string,
+  librariesPath: string,
+  assetsPath: string,
   versionRoot: string,
   auth: Auth,
   options: {
@@ -108,12 +112,12 @@ export async function generateLaunchArguments(
 
   const classPaths = generateClassPaths(
     versionManifest,
-    path.join(gameRoot, "libraries"),
+    librariesPath,
     path.join(versionRoot, `${versionManifest.id}.jar`),
   );
 
   function p(args: string[], arg: Argument) {
-    parseArg.apply(args, [arg, versionManifest, gameRoot, classPaths, auth]);
+    parseArg.apply(args, [arg, versionManifest, assetsPath, instancePath, classPaths, auth]);
   }
 
   for (const arg of versionManifest.arguments.jvm) {

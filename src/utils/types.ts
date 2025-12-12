@@ -179,20 +179,18 @@ export type Auth = {
 export type LaunchArguments = { command: string; args: string[] };
 
 export type Paths = {
-  root: string
-  version?: string
-  assets?: string
-  libraries?: string
-  natives?: string
-  javaRoot?: string
-}
+  root: string;
+  versions?: string;
+  assets?: string;
+  libraries?: string;
+  instances?: string;
+  javaRoot?: string;
+};
 
 export type LaunchErrorInfos = {
-      version: string;
-      versionPath: string;
-      javaLocation: string;
-      rootPath: string;
-      auth: Auth;
-      customGameArgs: string;
-      customJvmArgs: string;
-    }
+  version: string;
+  paths: Paths;
+  auth: Auth;
+  customGameArgs: string;
+  customJvmArgs: string;
+};

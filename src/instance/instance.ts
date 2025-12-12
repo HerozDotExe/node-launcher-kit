@@ -55,7 +55,9 @@ export class Instance extends EventEmitter<InstanceEvents> {
   paths: Paths;
   args: { java: string; game: string };
   versionManifest: Version;
-  javaLocation?: string;
+  javaLocation: string;
+  versionLocation: string;
+  instanceLocation: string;
   ready: boolean;
 
   constructor() {
@@ -78,21 +80,20 @@ export class Instance extends EventEmitter<InstanceEvents> {
     if (typeof paths === "string") {
       this.paths = {
         root: paths,
-        version: path.join(paths, "version", this.version),
+        versions: path.join(paths, "versions"),
         assets: path.join(paths, "assets"),
         javaRoot: path.join(paths, "java"),
         libraries: path.join(paths, "libraries"),
-        natives: path.join(paths, "natives"),
+        instances: path.join(paths, "instances"),
       };
     } else {
       this.paths = {
         root: paths.root,
-        version:
-          paths.version || path.join(paths.root, "version", this.version),
+        versions: paths.versions || path.join(paths.root, "versions"),
         assets: paths.assets || path.join(paths.root, "assets"),
         javaRoot: paths.javaRoot || path.join(paths.root, "java"),
         libraries: paths.libraries || path.join(paths.root, "libraries"),
-        natives: paths.natives || path.join(paths.root, "natives"),
+        instances: paths.instances || path.join(paths.root, "instances"),
       };
     }
   }
@@ -107,9 +108,12 @@ export class Instance extends EventEmitter<InstanceEvents> {
   }
 
   async initialize() {
+    this.versionLocation = path.join(this.paths.versions, this.version);
+    this.instanceLocation = path.join(this.paths.instances, this.version);
+
     this.versionManifest = await core.version.getVersionManifest(
       this.version,
-      this.paths.version,
+      this.versionLocation,
     );
 
     this.javaLocation = path.join(
@@ -122,7 +126,10 @@ export class Instance extends EventEmitter<InstanceEvents> {
     try {
       await this.initialize();
       this.ready = true;
-      await core.version.downloadJar(this.versionManifest, this.paths.version);
+      await core.version.downloadJar(
+        this.versionManifest,
+        this.versionLocation,
+      );
     } catch (original) {
       const error = new InstallError("version", original);
       error.throw();
@@ -173,7 +180,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
     try {
       const nativesDownloader = await core.NativesDownloader(
-        this.paths.natives,
+        this.instanceLocation,
         this.versionManifest,
       );
       nativesDownloader.on("completed", () => {
@@ -227,25 +234,28 @@ export class Instance extends EventEmitter<InstanceEvents> {
       }
 
       const args = await core.arguments.generateLaunchArguments(
-        await core.version.getVersionManifest(this.version, this.paths.version),
+        await core.version.getVersionManifest(
+          this.version,
+          this.versionLocation,
+        ),
         this.javaLocation,
-        this.paths.root,
-        this.paths.version,
+        this.instanceLocation,
+        this.paths.libraries,
+        this.paths.assets,
+        this.versionLocation,
         this.auth,
         { customGameArgs: this.args.game, customJvmArgs: this.args.java },
       );
 
-      const process = core.launch(args, this.paths.root);
+      const process = core.launch(args, this.instanceLocation);
 
       return process;
     } catch (original) {
       const error = new LaunchError(
         {
           version: this.version,
-          versionPath: this.paths.version,
-          javaLocation: this.javaLocation,
-          rootPath: this.paths.root,
           auth: this.auth,
+          paths: this.paths,
           customGameArgs: this.args.game,
           customJvmArgs: this.args.java,
         },
