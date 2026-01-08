@@ -28,7 +28,10 @@ export async function LibrariesDownloader(
 ) {
   const libs = getLibraries(versionManifest, librariesRoot);
 
-  const dPool = new DownloadPool(libs, { pQueueOptions: { concurrency: 5 } });
+  const dPool = new DownloadPool(libs, {
+    pQueueOptions: { concurrency: 5 },
+    overwrite: false,
+  });
 
   return dPool;
 }
