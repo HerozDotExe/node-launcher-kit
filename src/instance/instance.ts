@@ -1,9 +1,19 @@
-import { Auth, Paths, Version } from "../utils/types";
+import {
+  Auth,
+  Modloader,
+  Paths,
+  SupportedModloaders,
+  Version,
+} from "../utils/types";
 import * as core from "../core";
 import path from "path";
 import { os, arch } from "../utils/systemInfo";
 import { EventEmitter } from "node:events";
 import { InstallError, LaunchError } from "../utils/errors";
+import { installForge } from "../core/modloaders";
+import { getJavaExecutable } from "../core/java";
+import { readJson } from "../utils/fs";
+import { mergeManifests } from "../core/mergeManifests";
 
 function getJavaOs() {
   switch (os()) {
@@ -50,7 +60,7 @@ interface InstanceEvents {
 
 export class Instance extends EventEmitter<InstanceEvents> {
   version: string;
-  modLoader: { name: string; version: string };
+  modloader?: Modloader;
   auth: Auth;
   paths: Paths;
   args: { java: string; game: string };
@@ -70,8 +80,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
     this.version = version;
   }
 
-  setModLoader(name: string, version: string) {
-    this.modLoader = { name, version };
+  setModLoader(name: SupportedModloaders, version: string) {
+    this.modloader = { name, version };
   }
 
   setPaths(paths: string);
@@ -220,6 +230,29 @@ export class Instance extends EventEmitter<InstanceEvents> {
       const error = new InstallError("java", original);
       error.throw();
     }
+
+    if (this.modloader) {
+      try {
+        switch (this.modloader.name) {
+          case "forge":
+          case "neoforge":
+            await installForge(
+              this.version,
+              this.modloader,
+              getJavaExecutable(this.javaLocation, false),
+              this.paths.root,
+              this.paths.libraries,
+              this.paths.versions,
+            );
+            break;
+          default:
+            throw new Error("Unknown modloader");
+        }
+      } catch (original) {
+        const error = new InstallError("modloader", original);
+        error.throw();
+      }
+    }
   }
 
   async launch() {
@@ -233,11 +266,43 @@ export class Instance extends EventEmitter<InstanceEvents> {
         }
       }
 
+      switch (this.modloader?.name) {
+        case "forge": {
+          const forgeVersionManifest = await readJson<Version>(
+            path.join(
+              this.paths.versions,
+              `${this.version}-${this.modloader.name}-${this.modloader.version}`,
+              `${this.version}-${this.modloader.name}-${this.modloader.version}.json`,
+            ),
+          );
+
+          this.versionManifest = mergeManifests(
+            this.versionManifest,
+            forgeVersionManifest,
+          );
+          break;
+        }
+        case "neoforge":
+          {
+            const neoForgeVersionManifest = await readJson<Version>(
+              path.join(
+                this.paths.versions,
+                `${this.modloader.name}-${this.modloader.version}`,
+                `${this.modloader.name}-${this.modloader.version}.json`,
+              ),
+            );
+
+            this.versionManifest = mergeManifests(
+              this.versionManifest,
+              neoForgeVersionManifest,
+            );
+          }
+          break;
+        default:
+      }
+
       const args = await core.arguments.generateLaunchArguments(
-        await core.version.getVersionManifest(
-          this.version,
-          this.versionLocation,
-        ),
+        this.versionManifest,
         this.javaLocation,
         this.instanceLocation,
         this.paths.libraries,
@@ -258,6 +323,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
           paths: this.paths,
           customGameArgs: this.args.game,
           customJvmArgs: this.args.java,
+          versionManifest: this.versionManifest,
+          modlodaer: this.modloader,
         },
         original,
       );

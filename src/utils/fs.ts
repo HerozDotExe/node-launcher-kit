@@ -16,6 +16,6 @@ export async function ensureDir(path: string, recursive = false) {
   } else return false;
 }
 
-export async function readJson(destination: string) {
+export async function readJson<T>(destination: string): Promise<T> {
   return JSON.parse(await fs.readFile(destination, { encoding: "utf-8" }));
 }

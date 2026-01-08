@@ -11,6 +11,7 @@ function fillArguments(
   versionManifest: Version,
   assetsPath: string,
   instancePath: string,
+  librariesPath: string,
   classPaths: PoolFile[],
   auth: Auth,
 ) {
@@ -19,6 +20,7 @@ function fillArguments(
     "${launcher_name}": "nlk",
     "${launcher_version}": packageVersion,
     "${classpath}": classPaths,
+    "${library_directory}": librariesPath,
     "${game_directory}": instancePath,
     "${version_name}": versionManifest.id,
     "${version_type}": versionManifest.type,
@@ -33,14 +35,17 @@ function fillArguments(
     "${user_type}": auth.meta?.type || "msa",
     "${clientid}":
       auth.meta?.clientId || auth.client_token || auth.access_token,
+    "${classpath_separator}": path.delimiter,
   };
 
   for (const key in argumentsToFill) {
     if (Object.prototype.hasOwnProperty.call(argumentsToFill, key)) {
       const value = argumentsToFill[key];
-      arg = arg.replace(key, value);
+      arg = arg.replaceAll(key, value);
     }
   }
+
+  console.log(arg)
 
   return arg;
 }
@@ -51,22 +56,47 @@ function parseArg(
   versionManifest: Version,
   assetsPath: string,
   instancePath: string,
+  librariesPath: string,
   classPaths: PoolFile[],
   auth: Auth,
 ) {
   if (isNeeded(arg)) {
     if (typeof arg === "string") {
       this.push(
-        fillArguments(arg, versionManifest, assetsPath, instancePath, classPaths, auth),
+        fillArguments(
+          arg,
+          versionManifest,
+          assetsPath,
+          instancePath,
+          librariesPath,
+          classPaths,
+          auth,
+        ),
       );
     } else if (typeof arg.value === "string") {
       this.push(
-        fillArguments(arg.value, versionManifest, assetsPath, instancePath, classPaths, auth),
+        fillArguments(
+          arg.value,
+          versionManifest,
+          assetsPath,
+          instancePath,
+          librariesPath,
+          classPaths,
+          auth,
+        ),
       );
     } else if (arg.value.length > 1) {
       for (const e of arg.value) {
         this.push(
-          fillArguments(e, versionManifest, assetsPath, instancePath, classPaths, auth),
+          fillArguments(
+            e,
+            versionManifest,
+            assetsPath,
+            instancePath,
+            librariesPath,
+            classPaths,
+            auth,
+          ),
         );
       }
     }
@@ -117,7 +147,15 @@ export async function generateLaunchArguments(
   );
 
   function p(args: string[], arg: Argument) {
-    parseArg.apply(args, [arg, versionManifest, assetsPath, instancePath, classPaths, auth]);
+    parseArg.apply(args, [
+      arg,
+      versionManifest,
+      assetsPath,
+      instancePath,
+      librariesPath,
+      classPaths,
+      auth,
+    ]);
   }
 
   for (const arg of versionManifest.arguments.jvm) {

@@ -151,6 +151,7 @@ export type Version = {
   releaseTime: string;
   time: string;
   type: string;
+  inheritsFrom: string;
 };
 
 export type AssetIndex = {
@@ -193,4 +194,21 @@ export type LaunchErrorInfos = {
   auth: Auth;
   customGameArgs: string;
   customJvmArgs: string;
+  versionManifest: Version;
+  modlodaer: Modloader;
+};
+
+export type SupportedModloaders = "forge" | "neoforge";
+
+export type Modloader = { name: SupportedModloaders; version: string };
+
+export type LauncherProfiles = {
+  profiles: {
+    [key: string]: {
+      name: string;
+      type: string;
+      lastVersionId: string;
+      icon: string;
+    };
+  };
 };

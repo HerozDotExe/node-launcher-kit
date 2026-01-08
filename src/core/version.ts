@@ -41,15 +41,12 @@ export async function downloadJar(versionManifest: Version, to: string) {
     });
 }
 
-export async function getVersionManifest(
-  versionString: string,
-  to: string,
-): Promise<Version> {
+export async function getVersionManifest(versionString: string, to: string) {
   const destination = path.join(to, `${versionString}.json`);
   if (await exists(destination)) {
-    return await readJson(destination);
+    return await readJson<Version>(destination);
   }
 
   await downloadJson(versionString, to);
-  return await readJson(destination);
+  return await readJson<Version>(destination);
 }

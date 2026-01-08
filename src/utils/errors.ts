@@ -4,10 +4,12 @@ import { LaunchErrorInfos } from "./types";
 export class InstallError extends Error {
   step: string;
   original: Error;
-  constructor(step: string, original: Error) {
+  moreInfo?: string;
+  constructor(step: string, original: Error, moreInfo?: string) {
     super();
     this.step = step;
     this.original = original;
+    this.moreInfo = moreInfo;
   }
 
   throw() {
@@ -16,6 +18,10 @@ export class InstallError extends Error {
     );
     console.error(`[nlk ${packageVersion}] Original error is:`, this.original);
 
+    if (this.moreInfo) {
+      console.error(this.moreInfo);
+    }
+
     throw this;
   }
 }
@@ -23,10 +29,7 @@ export class InstallError extends Error {
 export class LaunchError extends Error {
   infos: LaunchErrorInfos;
   original: Error;
-  constructor(
-    infos: LaunchErrorInfos,
-    original: Error,
-  ) {
+  constructor(infos: LaunchErrorInfos, original: Error) {
     super();
     this.infos = infos;
     this.original = original;

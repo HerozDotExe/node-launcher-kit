@@ -1,9 +1,9 @@
 import { test } from "vitest";
-import { Instance, offlineAuth } from "../../dist/index.js";
+import { Instance, offlineAuth } from "../../../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 
-const gameRoot = path.join(import.meta.dirname, "temp");
+const gameRoot = path.join(import.meta.dirname, "..", "temp");
 await fs.rm(gameRoot, { recursive: true, force: true });
 await fs.mkdir(gameRoot, { recursive: true });
 
@@ -12,11 +12,12 @@ test("launch game", { timeout: 0 }, async () => {
 
   const auth = offlineAuth("player");
 
-  instance.setVersion("1.21.8");
+  instance.setVersion("1.21.1");
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
+  instance.setModLoader("neoforge", "21.1.217");
 
-  instance.on("progress", console.log)
+  instance.on("progress", console.log);
 
   await instance.install();
   const p = await instance.launch();
@@ -25,10 +26,14 @@ test("launch game", { timeout: 0 }, async () => {
     console.log(d.toString());
   });
 
-  await new Promise((res) => {
+  p.on("error", (d: Buffer) => {
+    console.log(d.toString());
+  });
+
+  await new Promise<void>((res) => {
     p.on("close", () => {
       console.log("closed");
-      res(0);
+      res();
     });
   });
 });
