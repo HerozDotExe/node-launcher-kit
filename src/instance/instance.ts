@@ -14,6 +14,7 @@ import { installForge } from "../core/modloaders";
 import { getJavaExecutable } from "../core/java";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
+import { exec } from "node:child_process";
 
 function getJavaOs() {
   switch (os()) {
@@ -56,6 +57,20 @@ interface InstanceEvents {
     doneSize: number,
     totalSize: number,
   ];
+}
+
+function checkJava(javaLocation: string) {
+  const javaExe = getJavaExecutable(javaLocation);
+
+  return new Promise<boolean>((res) => {
+    exec(`${javaExe} -version`, (err) => {
+      if (err) {
+        res(false);
+      } else {
+        res(true);
+      }
+    });
+  });
 }
 
 export class Instance extends EventEmitter<InstanceEvents> {
@@ -117,7 +132,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
     this.args.game = game || "";
   }
 
-  async initialize() {
+  private async initialize() {
     this.versionLocation = path.join(this.paths.versions, this.version);
     this.instanceLocation = path.join(this.paths.instances, this.version);
 
@@ -209,26 +224,28 @@ export class Instance extends EventEmitter<InstanceEvents> {
       error.throw();
     }
 
-    try {
-      const javaDownloader = await core.java.JavaDownloader(
-        getJavaOs(),
-        this.versionManifest.javaVersion.component,
-        this.paths.javaRoot,
-      );
-      javaDownloader.on("completed", () => {
-        this.emit(
-          "progress",
-          "java",
-          javaDownloader.done,
-          javaDownloader.total,
-          javaDownloader.doneSize,
-          javaDownloader.totalSize,
+    if (!await checkJava(this.javaLocation)) {
+      try {
+        const javaDownloader = await core.java.JavaDownloader(
+          getJavaOs(),
+          this.versionManifest.javaVersion.component,
+          this.paths.javaRoot,
         );
-      });
-      await javaDownloader.run();
-    } catch (original) {
-      const error = new InstallError("java", original);
-      error.throw();
+        javaDownloader.on("completed", () => {
+          this.emit(
+            "progress",
+            "java",
+            javaDownloader.done,
+            javaDownloader.total,
+            javaDownloader.doneSize,
+            javaDownloader.totalSize,
+          );
+        });
+        await javaDownloader.run();
+      } catch (original) {
+        const error = new InstallError("java", original);
+        error.throw();
+      }
     }
 
     if (this.modloader) {
