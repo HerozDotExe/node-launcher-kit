@@ -25,11 +25,11 @@ test("launch game", { timeout: 0 }, async () => {
     console.log(d.toString());
   });
 
-  p.on("error", (d: Buffer) => {
-    console.log(d.toString());
-  });
-
   await new Promise<void>((res) => {
+    p.on("error", (d: Buffer) => {
+      console.log(d.toString());
+      res();
+    });
     p.on("close", () => {
       console.log("closed");
       res();
