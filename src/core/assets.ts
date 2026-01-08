@@ -44,7 +44,10 @@ export async function AssetsDownloader(
     }
   }
 
-  const pool = new DownloadPool(files, { concurrency: 5 });
+  const pool = new DownloadPool(files, {
+    pQueueOptions: { concurrency: 5 },
+    overwrite: false,
+  });
 
   return pool;
 }

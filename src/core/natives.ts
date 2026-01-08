@@ -47,10 +47,12 @@ export async function NativesDownloader(
     natives,
     nativesPath,
     tempNativesPath,
-    {
-      concurrency: 5,
-    },
     [".git", "META-INF", ".sha1"],
+    {
+      pQueueOptions: {
+        concurrency: 5,
+      },
+    },
   );
 
   return pool;

@@ -30,8 +30,8 @@ export async function JavaDownloader(
     )
   ).files;
 
-  const componentDestination = path.join(rootDestination, component)
-  await ensureDir(componentDestination, true)
+  const componentDestination = path.join(rootDestination, component);
+  await ensureDir(componentDestination, true);
 
   const files: PoolFile[] = [];
 
@@ -50,10 +50,13 @@ export async function JavaDownloader(
     }
   }
 
-  const pool = new DownloadPool(files, { concurrency: 5 }, async () => {
-    if (process.platform !== "win32") {
-      await fs.chmod(path.join(componentDestination, "bin/java"), 0o777);
-    }
+  const pool = new DownloadPool(files, {
+    pQueueOptions: { concurrency: 5 },
+    cleanup: async () => {
+      if (process.platform !== "win32") {
+        await fs.chmod(path.join(componentDestination, "bin/java"), 0o777);
+      }
+    },
   });
 
   return pool;

@@ -1,8 +1,7 @@
 import AdmZip from "adm-zip";
-import { PoolFile } from "./types";
+import { PoolFile, PoolOptions } from "./types";
 import { downloadFile, DownloadPool } from "./fetch";
 import path from "path";
-import { Options } from "p-queue";
 
 export function unzipAll(from: string, to: string, filters: string[]) {
   const zip = new AdmZip(from);
@@ -12,7 +11,7 @@ export function unzipAll(from: string, to: string, filters: string[]) {
     for (const filter of filters) {
       if (entry.entryName.includes(filter)) {
         shouldSkip = true;
-        console.log("skipping", entry.entryName)
+        console.log("skipping", entry.entryName);
       }
     }
     if (shouldSkip) continue;
@@ -29,8 +28,8 @@ export class DownloadAndUnzipPool extends DownloadPool {
     elements: PoolFile[],
     destination: string,
     tempPath: string,
-    options?: Options<null, null>,
     filters: string[] = [],
+    options: PoolOptions = { pQueueOptions: {}, overwrite: true },
   ) {
     super(elements, options);
     this.tempPath = tempPath;

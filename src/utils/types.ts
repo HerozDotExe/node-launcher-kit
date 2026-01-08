@@ -1,3 +1,5 @@
+import { type Options as PQueueOptions } from "p-queue";
+
 export type RuntimeComponent =
   | "java-runtime-alpha"
   | "java-runtime-beta"
@@ -211,4 +213,10 @@ export type LauncherProfiles = {
       icon: string;
     };
   };
+};
+
+export type PoolOptions = {
+  pQueueOptions: PQueueOptions<null, null>;
+  cleanup?: () => Promise<void>;
+  overwrite?: boolean;
 };
