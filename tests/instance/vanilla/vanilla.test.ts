@@ -25,6 +25,10 @@ test("launch game", { timeout: 0 }, async () => {
     console.log(d.toString());
   });
 
+  p.stderr.on("data", (d: Buffer) => {
+    console.log(d.toString());
+  });
+
   await new Promise<void>((res) => {
     p.on("error", (d: Buffer) => {
       console.log(d.toString());

@@ -26,7 +26,7 @@ test("launch game", { timeout: 0 }, async () => {
     console.log(d.toString());
   });
 
-  p.on("error", (d: Buffer) => {
+  p.stderr.on("data", (d: Buffer) => {
     console.log(d.toString());
   });
 
