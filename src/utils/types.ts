@@ -220,3 +220,13 @@ export type PoolOptions = {
   cleanup?: () => Promise<void>;
   overwrite?: boolean;
 };
+
+export interface InstanceEvents {
+  progress: [
+    type: string,
+    done: number,
+    total: number,
+    doneSize: number,
+    totalSize: number,
+  ];
+}

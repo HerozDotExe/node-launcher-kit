@@ -1,5 +1,6 @@
 import {
   Auth,
+  InstanceEvents,
   Modloader,
   Paths,
   SupportedModloaders,
@@ -11,67 +12,9 @@ import { os, arch } from "../utils/systemInfo";
 import { EventEmitter } from "node:events";
 import { InstallError, LaunchError } from "../utils/errors";
 import { installForge } from "../core/modloaders";
-import { getJavaExecutable } from "../core/java";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
-import { exec } from "node:child_process";
-
-function getJavaOs() {
-  switch (os()) {
-    case "windows":
-      switch (arch()) {
-        case "arm":
-          return "windows-arm64";
-        case "x86":
-          return "windows-x86";
-        case "x64":
-        default:
-          return "windows-x64";
-      }
-    case "osx":
-      switch (arch()) {
-        case "arm":
-          return "mac-os-arm64";
-        case "x64":
-        case "x86":
-        default:
-          return "mac-os";
-      }
-    case "linux":
-      switch (arch()) {
-        case "x86":
-          return "linux-i386";
-        case "x64":
-        case "arm":
-        default:
-          return "linux";
-      }
-  }
-}
-
-interface InstanceEvents {
-  progress: [
-    type: string,
-    done: number,
-    total: number,
-    doneSize: number,
-    totalSize: number,
-  ];
-}
-
-function checkJava(javaLocation: string) {
-  const javaExe = getJavaExecutable(javaLocation);
-
-  return new Promise<boolean>((res) => {
-    exec(`${javaExe} -version`, (err) => {
-      if (err) {
-        res(false);
-      } else {
-        res(true);
-      }
-    });
-  });
-}
+import { checkJava } from "./java";
 
 export class Instance extends EventEmitter<InstanceEvents> {
   version: string;
@@ -80,10 +23,10 @@ export class Instance extends EventEmitter<InstanceEvents> {
   paths: Paths;
   args: { java: string; game: string };
   versionManifest: Version;
-  javaLocation: string;
   versionLocation: string;
   instanceLocation: string;
   ready: boolean;
+  javaExecutable: string;
 
   constructor() {
     super();
@@ -99,6 +42,10 @@ export class Instance extends EventEmitter<InstanceEvents> {
     this.modloader = { name, version };
   }
 
+  setJavaExecutable(path: string) {
+    this.javaExecutable = path;
+  }
+
   setPaths(paths: string);
   setPaths(paths: Paths);
   setPaths(paths: Paths | string) {
@@ -107,7 +54,6 @@ export class Instance extends EventEmitter<InstanceEvents> {
         root: paths,
         versions: path.join(paths, "versions"),
         assets: path.join(paths, "assets"),
-        javaRoot: path.join(paths, "java"),
         libraries: path.join(paths, "libraries"),
         instances: path.join(paths, "instances"),
       };
@@ -116,7 +62,6 @@ export class Instance extends EventEmitter<InstanceEvents> {
         root: paths.root,
         versions: paths.versions || path.join(paths.root, "versions"),
         assets: paths.assets || path.join(paths.root, "assets"),
-        javaRoot: paths.javaRoot || path.join(paths.root, "java"),
         libraries: paths.libraries || path.join(paths.root, "libraries"),
         instances: paths.instances || path.join(paths.root, "instances"),
       };
@@ -133,17 +78,16 @@ export class Instance extends EventEmitter<InstanceEvents> {
   }
 
   private async initialize() {
+    if (!this.javaExecutable || !this.paths.root || !this.version) {
+      throw new Error("Missing options")
+    }
+
     this.versionLocation = path.join(this.paths.versions, this.version);
     this.instanceLocation = path.join(this.paths.instances, this.version);
 
     this.versionManifest = await core.version.getVersionManifest(
       this.version,
       this.versionLocation,
-    );
-
-    this.javaLocation = path.join(
-      this.paths.javaRoot,
-      this.versionManifest.javaVersion.component,
     );
   }
 
@@ -156,7 +100,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         this.versionLocation,
       );
     } catch (original) {
-      const error = new InstallError("version", original);
+      const error = new InstallError("installInit", original);
       error.throw();
     }
 
@@ -224,28 +168,10 @@ export class Instance extends EventEmitter<InstanceEvents> {
       error.throw();
     }
 
-    if (!await checkJava(this.javaLocation)) {
-      try {
-        const javaDownloader = await core.java.JavaDownloader(
-          getJavaOs(),
-          this.versionManifest.javaVersion.component,
-          this.paths.javaRoot,
-        );
-        javaDownloader.on("completed", () => {
-          this.emit(
-            "progress",
-            "java",
-            javaDownloader.done,
-            javaDownloader.total,
-            javaDownloader.doneSize,
-            javaDownloader.totalSize,
-          );
-        });
-        await javaDownloader.run();
-      } catch (original) {
-        const error = new InstallError("java", original);
-        error.throw();
-      }
+    const javaError = await checkJava(this.javaExecutable)
+    if (javaError) {
+      const error = new InstallError("java", javaError)
+      error.throw()
     }
 
     if (this.modloader) {
@@ -256,7 +182,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
             await installForge(
               this.version,
               this.modloader,
-              getJavaExecutable(this.javaLocation, false),
+              this.javaExecutable,
               this.paths.root,
               this.paths.libraries,
               this.paths.versions,
@@ -278,7 +204,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         try {
           await this.initialize();
         } catch (original) {
-          const error = new InstallError("version", original);
+          const error = new InstallError("launchInit", original);
           error.throw();
         }
       }
@@ -320,7 +246,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
       const args = await core.arguments.generateLaunchArguments(
         this.versionManifest,
-        this.javaLocation,
+        this.javaExecutable,
         this.instanceLocation,
         this.paths.libraries,
         this.paths.assets,

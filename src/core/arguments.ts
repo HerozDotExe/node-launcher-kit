@@ -1,7 +1,6 @@
 import path from "path";
 import { isNeeded } from "../utils/rules";
 import { Argument, Auth, PoolFile, Version } from "../utils/types";
-import { getJavaExecutable } from "./java";
 import { getLibraries } from "./libraries";
 import { version as packageVersion } from "../../package.json";
 import { getArgument } from "./log4j";
@@ -121,7 +120,7 @@ function generateClassPaths(
 
 export async function generateLaunchArguments(
   versionManifest: Version,
-  javaRoot: string,
+  javaExecutable: string,
   instancePath: string,
   librariesPath: string,
   assetsPath: string,
@@ -180,7 +179,7 @@ export async function generateLaunchArguments(
   const log4j = await getArgument(versionManifest, versionRoot);
 
   return {
-    command: getJavaExecutable(javaRoot),
+    command: javaExecutable,
     args: [
       ...jvm,
       `-Xms${options.minRam || "2G"}`,

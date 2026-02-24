@@ -1,5 +1,5 @@
 import { test } from "vitest";
-import { Instance, offlineAuth } from "../../../dist/index.js";
+import { Instance, offlineAuth, RuntimeManager, getJavaComponent } from "../../../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 
@@ -9,12 +9,18 @@ await fs.mkdir(gameRoot, { recursive: true });
 
 test("launch game", { timeout: 0 }, async () => {
   const instance = new Instance();
+  const javaManager = new RuntimeManager(path.join(gameRoot, "java"));
+
+  javaManager.on("progress", console.log)
+
+  const java = await javaManager.use(await getJavaComponent("1.21.1"))
 
   const auth = offlineAuth("player");
 
   instance.setVersion("1.21.1");
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
+  instance.setJavaExecutable(java)
   instance.setModLoader("neoforge", "21.1.217");
 
   instance.on("progress", console.log);
