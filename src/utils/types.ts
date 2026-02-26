@@ -116,10 +116,11 @@ export type Library = {
 };
 
 export type Version = {
-  arguments: {
+  arguments?: {
     game: Argument[];
     jvm: Argument[];
   };
+  minecraftArguments: string;
   assetIndex: {
     id: string;
     sha1: string;
@@ -141,7 +142,7 @@ export type Version = {
     majorVersion: number;
   };
   libraries: Library[];
-  logging: {
+  logging?: {
     client: {
       argument: string;
       file: { id: string; sha1: string; size: number; url: string };

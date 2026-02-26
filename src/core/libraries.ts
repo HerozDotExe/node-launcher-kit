@@ -9,7 +9,7 @@ export function getLibraries(versionManifest: Version, librariesRoot: string) {
   for (const key in versionManifest.libraries) {
     if (Object.prototype.hasOwnProperty.call(versionManifest.libraries, key)) {
       const library = versionManifest.libraries[key];
-      if (isNeeded(library)) {
+      if (isNeeded(library) && library.downloads.artifact) {
         libs.push({
           url: library.downloads.artifact.url,
           path: path.join(librariesRoot, library.downloads.artifact.path),

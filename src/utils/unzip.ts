@@ -11,7 +11,6 @@ export function unzipAll(from: string, to: string, filters: string[]) {
     for (const filter of filters) {
       if (entry.entryName.includes(filter)) {
         shouldSkip = true;
-        console.log("skipping", entry.entryName);
       }
     }
     if (shouldSkip) continue;

@@ -1,17 +1,18 @@
 import path from "path";
 import { isNeeded } from "../utils/rules";
-import { Argument, Auth, PoolFile, Version } from "../utils/types";
+import { Argument, Auth, Version } from "../utils/types";
 import { getLibraries } from "./libraries";
 import { version as packageVersion } from "../../package.json";
 import { getArgument } from "./log4j";
 
+// Fill templates
 function fillArguments(
   arg: string,
   versionManifest: Version,
   assetsPath: string,
   instancePath: string,
   librariesPath: string,
-  classPaths: PoolFile[],
+  classPaths: string,
   auth: Auth,
 ) {
   const argumentsToFill = {
@@ -25,6 +26,7 @@ function fillArguments(
     "${version_type}": versionManifest.type,
     "${assets_index_name}": versionManifest.assets,
     "${assets_root}": assetsPath,
+    "${game_assets}": assetsPath,
     "${auth_access_token}": auth.access_token,
     "${auth_session}": auth.access_token,
     "${auth_player_name}": auth.name,
@@ -44,11 +46,10 @@ function fillArguments(
     }
   }
 
-  console.log(arg)
-
   return arg;
 }
 
+// Check if each arg is needed and fill templates
 function parseArg(
   this: string[],
   arg: Argument,
@@ -56,7 +57,7 @@ function parseArg(
   assetsPath: string,
   instancePath: string,
   librariesPath: string,
-  classPaths: PoolFile[],
+  classPaths: string,
   auth: Auth,
 ) {
   if (isNeeded(arg)) {
@@ -133,16 +134,15 @@ export async function generateLaunchArguments(
     customGameArgs?: string;
   },
 ) {
-  // Log4j /!\
-  // Replace templates /!\
-
   const jvm: string[] = [];
-  const game: string[] = [];
+  let game: string[] = [];
+
+  const versionJar = path.join(versionRoot, `${versionManifest.id}.jar`);
 
   const classPaths = generateClassPaths(
     versionManifest,
     librariesPath,
-    path.join(versionRoot, `${versionManifest.id}.jar`),
+    versionJar,
   );
 
   function p(args: string[], arg: Argument) {
@@ -157,11 +157,33 @@ export async function generateLaunchArguments(
     ]);
   }
 
-  for (const arg of versionManifest.arguments.jvm) {
-    p(jvm, arg);
-  }
-  for (const arg of versionManifest.arguments.game) {
-    p(game, arg);
+  if (versionManifest.arguments) {
+    for (const arg of versionManifest.arguments.jvm) {
+      p(jvm, arg);
+    }
+    for (const arg of versionManifest.arguments.game) {
+      p(game, arg);
+    }
+  } else {
+    console.log(versionManifest.minecraftArguments)
+    game = fillArguments(
+      versionManifest.minecraftArguments,
+      versionManifest,
+      assetsPath,
+      instancePath,
+      librariesPath,
+      classPaths,
+      auth,
+    ).split(" ");
+
+    jvm.push(`-Djava.library.path=${path.join(instancePath, "natives")}`);
+    jvm.push(`-Dminecraft.launcher.brand=nlk`);
+    jvm.push(`-Dminecraft.launcher.version=${packageVersion}`);
+    jvm.push(
+      `-Dminecraft.client.jar=${path.join(versionRoot, `${versionManifest.id}.jar`)}`,
+    );
+    jvm.push("-cp");
+    jvm.push(classPaths)
   }
 
   if (options.customJvmArgs !== "") {
@@ -178,21 +200,26 @@ export async function generateLaunchArguments(
 
   const log4j = await getArgument(versionManifest, versionRoot);
 
+  let launchArguments = [
+    ...jvm,
+    `-Xms${options.minRam || "2G"}`,
+    `-Xmx${options.maxRam || "2G"}`,
+    "-XX:+UnlockExperimentalVMOptions",
+    "-XX:+UseG1GC",
+    "-XX:G1NewSizePercent=20",
+    "-XX:G1ReservePercent=20",
+    "-XX:MaxGCPauseMillis=50",
+    "-XX:G1HeapRegionSize=32M",
+  ]
+
+  if (log4j) {
+    launchArguments.push(log4j)
+  }
+
+  launchArguments = [...launchArguments, versionManifest.mainClass, ...game,]
+
   return {
     command: javaExecutable,
-    args: [
-      ...jvm,
-      `-Xms${options.minRam || "2G"}`,
-      `-Xmx${options.maxRam || "2G"}`,
-      "-XX:+UnlockExperimentalVMOptions",
-      "-XX:+UseG1GC",
-      "-XX:G1NewSizePercent=20",
-      "-XX:G1ReservePercent=20",
-      "-XX:MaxGCPauseMillis=50",
-      "-XX:G1HeapRegionSize=32M",
-      log4j,
-      versionManifest.mainClass,
-      ...game,
-    ],
+    args: launchArguments,
   };
 }

@@ -8,7 +8,6 @@ import {
 } from "../utils/types";
 import * as core from "../core";
 import path from "path";
-import { os, arch } from "../utils/systemInfo";
 import { EventEmitter } from "node:events";
 import { InstallError, LaunchError } from "../utils/errors";
 import { installForge } from "../core/modloaders";
@@ -149,7 +148,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
     try {
       const nativesDownloader = await core.NativesDownloader(
-        this.instanceLocation,
+        path.join(this.instanceLocation, "natives"),
         this.versionManifest,
       );
       nativesDownloader.on("completed", () => {
