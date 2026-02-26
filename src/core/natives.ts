@@ -18,7 +18,7 @@ async function getNatives(versionManifest: Version, tempNativesPath: string) {
         const native: Native =
           os() === "osx"
             ? library.downloads.classifiers["natives-osx"] ||
-              library.downloads.classifiers["natives-macos"]
+            library.downloads.classifiers["natives-macos"]
             : library.downloads.classifiers[`natives-${os()}`];
 
         const destination = path.join(
@@ -48,6 +48,7 @@ export async function NativesDownloader(
     nativesPath,
     tempNativesPath,
     [".git", "META-INF", ".sha1"],
+    "skip",
     {
       pQueueOptions: {
         concurrency: 5,
