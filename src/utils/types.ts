@@ -198,7 +198,7 @@ export type LaunchErrorInfos = {
   customGameArgs: string;
   customJvmArgs: string;
   versionManifest: Version;
-  modlodaer: Modloader;
+  modloader: Modloader;
 };
 
 export type SupportedModloaders = "forge" | "neoforge";

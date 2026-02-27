@@ -266,7 +266,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
           customGameArgs: this.args.game,
           customJvmArgs: this.args.java,
           versionManifest: this.versionManifest,
-          modlodaer: this.modloader,
+          modloader: this.modloader,
         },
         original,
       );
