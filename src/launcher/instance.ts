@@ -214,40 +214,42 @@ export class Instance extends EventEmitter<InstanceEvents> {
         }
       }
 
-      switch (this.modloader?.name) {
-        case "forge": {
-          const forgeVersionManifest = await readJson<Version>(
-            path.join(
-              this.paths!.versions!,
-              `${this.version}-${this.modloader.name}-${this.modloader.version}`,
-              `${this.version}-${this.modloader.name}-${this.modloader.version}.json`,
-            ),
-          );
-
-          this.versionManifest = mergeManifests(
-            this.versionManifest!,
-            forgeVersionManifest,
-          );
-          break;
-        }
-        case "neoforge":
-          {
-            const neoForgeVersionManifest = await readJson<Version>(
+      if (this.modloader) {
+        switch (this.modloader.name) {
+          case "forge": {
+            const forgeVersionManifest = await readJson<Version>(
               path.join(
                 this.paths!.versions!,
-                `${this.modloader.name}-${this.modloader.version}`,
-                `${this.modloader.name}-${this.modloader.version}.json`,
+                `${this.version}-${this.modloader.name}-${this.modloader.version}`,
+                `${this.version}-${this.modloader.name}-${this.modloader.version}.json`,
               ),
             );
 
             this.versionManifest = mergeManifests(
               this.versionManifest!,
-              neoForgeVersionManifest,
+              forgeVersionManifest,
             );
+            break;
           }
-          break;
-        default:
-          throw new Error("Unknown modloader");
+          case "neoforge":
+            {
+              const neoForgeVersionManifest = await readJson<Version>(
+                path.join(
+                  this.paths!.versions!,
+                  `${this.modloader.name}-${this.modloader.version}`,
+                  `${this.modloader.name}-${this.modloader.version}.json`,
+                ),
+              );
+
+              this.versionManifest = mergeManifests(
+                this.versionManifest!,
+                neoForgeVersionManifest,
+              );
+            }
+            break;
+          default:
+            throw new Error("Unknown modloader");
+        }
       }
 
       const args = await core.arguments.generateLaunchArguments(
