@@ -14,12 +14,18 @@ export function mergeManifests(base: Version, layer: Version) {
       base.libraries.push(lib);
   }
 
-  for (const arg of layer.arguments.game) {
-    base.arguments.game.push(arg);
-  }
+  if (layer.arguments && base.arguments) {
+    // modern versions
+    for (const arg of layer.arguments.game) {
+      base.arguments.game.push(arg);
+    }
 
-  for (const arg of layer.arguments.jvm) {
-    base.arguments.jvm.push(arg);
+    for (const arg of layer.arguments.jvm) {
+      base.arguments.jvm.push(arg);
+    }
+  } else {
+    // older versions
+    base.minecraftArguments = layer.minecraftArguments
   }
 
   return base;

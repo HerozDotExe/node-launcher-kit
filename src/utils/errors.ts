@@ -5,10 +5,10 @@ export class InstallError extends Error {
   step: string;
   original: Error;
   moreInfo?: string;
-  constructor(step: string, original: Error, moreInfo?: string) {
+  constructor(step: string, original: unknown, moreInfo?: string) {
     super();
     this.step = step;
-    this.original = original;
+    this.original = original as Error;
     this.moreInfo = moreInfo;
   }
 

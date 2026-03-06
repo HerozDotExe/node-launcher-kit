@@ -83,7 +83,7 @@ export type Native = {
   url: string;
 };
 
-type NativeOS = "natives-linux" | "natives-windows" | "natives-macos";
+type NativeOS = "natives-linux" | "natives-windows" | "natives-macos" | "natives-osx";
 
 type Rules = {
   action: "allow" | "disallow";
@@ -217,6 +217,7 @@ export type LauncherProfiles = {
 };
 
 export type PoolOptions = {
+  //@ts-expect-error can't figure out what to put as arguments of PQueueOptions
   pQueueOptions: PQueueOptions<null, null>;
   cleanup?: () => Promise<void>;
   overwrite?: boolean;

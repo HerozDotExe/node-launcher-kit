@@ -53,13 +53,13 @@ export class DownloadAndUnzipPool extends DownloadPool {
 
   async run() {
     for (const element of this.elements) {
-      this.totalSize += element.size;
+      this.totalSize += element.size!;
 
       this.add(async () => {
         await this.downloadAndUnzip(element, this.filters, this.unzipMode);
         // update status here to ensure that it is run before "completed" events listeners
         this.done++;
-        this.doneSize += element.size;
+        this.doneSize += element.size!;
       });
     }
 

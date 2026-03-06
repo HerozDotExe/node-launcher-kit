@@ -9,7 +9,7 @@ import {
   RuntimeComponent,
   RuntimeOS,
 } from "../utils/types";
-import { ensureDir, exists } from "../utils/fs";
+import { ensureDir } from "../utils/fs";
 import { EventEmitter } from "stream";
 import { exec } from "child_process";
 import { arch, os } from "../utils/systemInfo";
@@ -91,9 +91,9 @@ async function JavaDownloader(
       const element = javaRuntimeManifest[key];
       if (element.type === "file") {
         files.push({
-          url: element.downloads.raw.url,
+          url: element.downloads!.raw.url,
           path: path.join(componentDestination, key),
-          size: element.downloads.raw.size,
+          size: element.downloads!.raw.size,
         });
       } else if (element.type === "directory") {
         await ensureDir(path.join(componentDestination, key), true);

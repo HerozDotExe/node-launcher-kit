@@ -14,22 +14,25 @@ import { installForge } from "../core/modloaders";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
 import { checkJava } from "./java";
+import { ChildProcessWithoutNullStreams } from "node:child_process";
 
 export class Instance extends EventEmitter<InstanceEvents> {
-  version: string;
+  version?: string;
   modloader?: Modloader;
-  auth: Auth;
-  paths: Paths;
+  auth?: Auth;
+  paths?: Paths;
   args: { java: string; game: string };
-  versionManifest: Version;
-  versionLocation: string;
-  instanceLocation: string;
+  ram: { max: string; min: string };
+  versionManifest?: Version;
+  versionLocation?: string;
+  instanceLocation?: string;
   ready: boolean;
-  javaExecutable: string;
+  javaExecutable?: string;
 
   constructor() {
     super();
     this.args = { java: "", game: "" };
+    this.ram = { max: "2G", min: "2G" };
     this.ready = false;
   }
 
@@ -45,9 +48,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
     this.javaExecutable = path;
   }
 
-  setPaths(paths: string);
-  setPaths(paths: Paths);
-  setPaths(paths: Paths | string) {
+  setPaths(paths: Paths | string): void {
     if (typeof paths === "string") {
       this.paths = {
         root: paths,
@@ -76,13 +77,18 @@ export class Instance extends EventEmitter<InstanceEvents> {
     this.args.game = game || "";
   }
 
+  setRAM({ min, max }: { min?: string; max?: string }) {
+    this.ram.min = min || "2G";
+    this.ram.max = max || "2G";
+  }
+
   private async initialize() {
-    if (!this.javaExecutable || !this.paths.root || !this.version) {
+    if (!this.javaExecutable || !this.paths?.root || !this.version || !this.auth) {
       throw new Error("Missing options")
     }
 
-    this.versionLocation = path.join(this.paths.versions, this.version);
-    this.instanceLocation = path.join(this.paths.instances, this.version);
+    this.versionLocation = path.join(this.paths.versions!, this.version);
+    this.instanceLocation = path.join(this.paths.instances!, this.version);
 
     this.versionManifest = await core.version.getVersionManifest(
       this.version,
@@ -95,8 +101,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
       await this.initialize();
       this.ready = true;
       await core.version.downloadJar(
-        this.versionManifest,
-        this.versionLocation,
+        this.versionManifest!,
+        this.versionLocation!,
       );
     } catch (original) {
       const error = new InstallError("installInit", original);
@@ -105,8 +111,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
     try {
       const librariesDownloader = await core.LibrariesDownloader(
-        this.paths.libraries,
-        this.versionManifest,
+        this.paths!.libraries!,
+        this.versionManifest!,
       );
 
       librariesDownloader.on("completed", () => {
@@ -127,8 +133,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
     try {
       const assetsDownloader = await core.AssetsDownloader(
-        this.paths.assets,
-        this.versionManifest,
+        this.paths!.assets!,
+        this.versionManifest!,
       );
       assetsDownloader.on("completed", () => {
         this.emit(
@@ -148,8 +154,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
     try {
       const nativesDownloader = await core.NativesDownloader(
-        path.join(this.instanceLocation, "natives"),
-        this.versionManifest,
+        path.join(this.instanceLocation!, "natives"),
+        this.versionManifest!,
       );
       nativesDownloader.on("completed", () => {
         this.emit(
@@ -167,7 +173,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
       error.throw();
     }
 
-    const javaError = await checkJava(this.javaExecutable)
+    const javaError = await checkJava(this.javaExecutable!)
     if (javaError) {
       const error = new InstallError("java", javaError)
       error.throw()
@@ -179,12 +185,12 @@ export class Instance extends EventEmitter<InstanceEvents> {
           case "forge":
           case "neoforge":
             await installForge(
-              this.version,
+              this.version!,
               this.modloader,
-              this.javaExecutable,
-              this.paths.root,
-              this.paths.libraries,
-              this.paths.versions,
+              this.javaExecutable!,
+              this.paths!.root,
+              this.paths!.libraries!,
+              this.paths!.versions!,
             );
             break;
           default:
@@ -197,7 +203,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
     }
   }
 
-  async launch() {
+  async launch(): Promise<ChildProcessWithoutNullStreams> {
     try {
       if (!this.ready) {
         try {
@@ -212,14 +218,14 @@ export class Instance extends EventEmitter<InstanceEvents> {
         case "forge": {
           const forgeVersionManifest = await readJson<Version>(
             path.join(
-              this.paths.versions,
+              this.paths!.versions!,
               `${this.version}-${this.modloader.name}-${this.modloader.version}`,
               `${this.version}-${this.modloader.name}-${this.modloader.version}.json`,
             ),
           );
 
           this.versionManifest = mergeManifests(
-            this.versionManifest,
+            this.versionManifest!,
             forgeVersionManifest,
           );
           break;
@@ -228,14 +234,14 @@ export class Instance extends EventEmitter<InstanceEvents> {
           {
             const neoForgeVersionManifest = await readJson<Version>(
               path.join(
-                this.paths.versions,
+                this.paths!.versions!,
                 `${this.modloader.name}-${this.modloader.version}`,
                 `${this.modloader.name}-${this.modloader.version}.json`,
               ),
             );
 
             this.versionManifest = mergeManifests(
-              this.versionManifest,
+              this.versionManifest!,
               neoForgeVersionManifest,
             );
           }
@@ -244,33 +250,34 @@ export class Instance extends EventEmitter<InstanceEvents> {
       }
 
       const args = await core.arguments.generateLaunchArguments(
-        this.versionManifest,
-        this.javaExecutable,
-        this.instanceLocation,
-        this.paths.libraries,
-        this.paths.assets,
-        this.versionLocation,
-        this.auth,
-        { customGameArgs: this.args.game, customJvmArgs: this.args.java },
+        this.versionManifest!,
+        this.javaExecutable!,
+        this.instanceLocation!,
+        this.paths!.libraries!,
+        this.paths!.assets!,
+        this.versionLocation!,
+        this.auth!,
+        this.args,
+        this.ram
       );
 
-      const process = core.launch(args, this.instanceLocation);
+      const process = core.launch(args, this.instanceLocation!);
 
       return process;
     } catch (original) {
       const error = new LaunchError(
         {
-          version: this.version,
-          auth: this.auth,
-          paths: this.paths,
-          customGameArgs: this.args.game,
-          customJvmArgs: this.args.java,
-          versionManifest: this.versionManifest,
-          modloader: this.modloader,
+          version: this.version!,
+          auth: this.auth!,
+          paths: this.paths!,
+          customGameArgs: this.args.game!,
+          customJvmArgs: this.args.java!,
+          versionManifest: this.versionManifest!,
+          modloader: this.modloader!,
         },
-        original,
+        original as Error,
       );
-      error.throw();
+      throw error.throw();
     }
   }
 }

@@ -1,5 +1,5 @@
 import { version as packageVersion } from "../../package.json";
-import { spawn, spawnSync } from "child_process";
+import { spawn } from "child_process";
 import { LaunchArguments } from "../utils/types";
 
 export function launch(

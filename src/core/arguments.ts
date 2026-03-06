@@ -15,7 +15,7 @@ function fillArguments(
   classPaths: string,
   auth: Auth,
 ) {
-  const argumentsToFill = {
+  const argumentsToFill: { [key: string]: string } = {
     "${natives_directory}": path.join(instancePath, "natives"),
     "${launcher_name}": "nlk",
     "${launcher_version}": packageVersion,
@@ -127,12 +127,8 @@ export async function generateLaunchArguments(
   assetsPath: string,
   versionRoot: string,
   auth: Auth,
-  options: {
-    minRam?: string;
-    maxRam?: string;
-    customJvmArgs?: string;
-    customGameArgs?: string;
-  },
+  customArgs: { java: string; game: string },
+  ram: { max: string; min: string },
 ) {
   const jvm: string[] = [];
   let game: string[] = [];
@@ -186,14 +182,14 @@ export async function generateLaunchArguments(
     jvm.push(classPaths)
   }
 
-  if (options.customJvmArgs !== "") {
-    for (const arg of options.customJvmArgs.split(" ")) {
+  if (customArgs.java !== "") {
+    for (const arg of customArgs.java.split(" ")) {
       jvm.push(arg);
     }
   }
 
-  if (options.customGameArgs !== "") {
-    for (const arg of options.customGameArgs.split(" ")) {
+  if (customArgs.game !== "") {
+    for (const arg of customArgs.game.split(" ")) {
       game.push(arg);
     }
   }
@@ -202,8 +198,8 @@ export async function generateLaunchArguments(
 
   let launchArguments = [
     ...jvm,
-    `-Xms${options.minRam || "2G"}`,
-    `-Xmx${options.maxRam || "2G"}`,
+    `-Xms${ram.min}`,
+    `-Xmx${ram.max}`,
     "-XX:+UnlockExperimentalVMOptions",
     "-XX:+UseG1GC",
     "-XX:G1NewSizePercent=20",

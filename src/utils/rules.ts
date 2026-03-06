@@ -33,7 +33,7 @@ export function isNeeded(element: Library | Argument): boolean {
           return true;
         } else return false;
       } else {
-        if (rule.os.name === os()) {
+        if (rule.os!.name === os()) {
           return false;
         } else return true;
       }
