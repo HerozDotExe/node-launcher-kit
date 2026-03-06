@@ -247,6 +247,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
           }
           break;
         default:
+          throw new Error("Unknown modloader");
       }
 
       const args = await core.arguments.generateLaunchArguments(
