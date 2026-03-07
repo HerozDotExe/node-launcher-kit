@@ -7,6 +7,7 @@ pkgs.mkShell {
   # Java
   packages = with pkgs; [
     jre8
+    xrandr
   ];
 
   # Env

@@ -1,7 +1,7 @@
 import path from "path";
 import { downloadFile } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
-import { LauncherProfiles, Modloader } from "../utils/types";
+import { LauncherProfiles, Modloader, Version } from "../utils/types";
 import fs from "fs/promises";
 import { execSync, spawn } from "child_process";
 import { version as packageVersion } from "../../package.json";
@@ -88,52 +88,69 @@ export function runForgeInstaller(
   });
 }
 
+function isModernForge(version: string) {
+  if (version.startsWith("1.")) {
+    version = version.slice(2, version.length)
+  }
+
+  const parsed = version.split(".").map(v => parseInt(v))
+
+  if (parsed[0] > 12) {
+    return true
+  } else if (parsed[0] === 12 && parsed[1] === 2) {
+    return true
+  } else return false
+}
+
 export async function installForge(
-  minecraftVersion: string,
+  versionManifest: Version,
   modloader: Modloader,
   javaExecutable: string,
   root: string,
+  instanceLocation: string,
   librariesPath: string,
-  versionsPath: string,
+  versionsPath: string
 ) {
   const tempFolder = await getTempFolder("forge");
 
-  // Download and extract installer file
-  const forgeInstallerPath = await downloadJar(
-    minecraftVersion,
-    modloader,
-    "installer",
-    tempFolder,
-  );
+  if (isModernForge(versionManifest.id)) {
+    // Download and extract installer file
+    const forgeInstallerPath = await downloadJar(
+      versionManifest.id,
+      modloader,
+      "installer",
+      tempFolder,
+    );
 
-  const fakeLauncher = path.join(tempFolder, "fakeLauncher");
+    const fakeLauncher = path.join(tempFolder, "fakeLauncher");
 
-  await fs.mkdir(fakeLauncher);
-  await fs.writeFile(path.join(fakeLauncher, "launcher_profiles.json"), "{}");
+    await fs.mkdir(fakeLauncher);
+    await fs.writeFile(path.join(fakeLauncher, "launcher_profiles.json"), "{}");
 
-  await runForgeInstaller(javaExecutable, forgeInstallerPath, fakeLauncher);
+    await runForgeInstaller(javaExecutable, forgeInstallerPath, fakeLauncher);
 
-  // Copy libraries and versions files
-  for (const file of await fs.readdir(path.join(fakeLauncher, "libraries"))) {
+    // Copy libraries and versions files
+    for (const file of await fs.readdir(path.join(fakeLauncher, "libraries"))) {
+      await fs.cp(
+        path.join(fakeLauncher, "libraries", file),
+        path.join(librariesPath, file),
+        {
+          recursive: true,
+        },
+      );
+    }
+
+    const fakeLauncherProfiles = await readJson<LauncherProfiles>(
+      path.join(fakeLauncher, "launcher_profiles.json"),
+    );
+    const originalVersionId =
+      fakeLauncherProfiles.profiles[Object.keys(fakeLauncherProfiles.profiles)[0]]
+        .lastVersionId;
+
     await fs.cp(
-      path.join(fakeLauncher, "libraries", file),
-      path.join(librariesPath, file),
-      {
-        recursive: true,
-      },
+      path.join(fakeLauncher, "versions", originalVersionId),
+      path.join(versionsPath, originalVersionId),
+      { recursive: true },
     );
   }
-
-  const fakeLauncherProfiles = await readJson<LauncherProfiles>(
-    path.join(fakeLauncher, "launcher_profiles.json"),
-  );
-  const originalVersionId =
-    fakeLauncherProfiles.profiles[Object.keys(fakeLauncherProfiles.profiles)[0]]
-      .lastVersionId;
-
-  await fs.cp(
-    path.join(fakeLauncher, "versions", originalVersionId),
-    path.join(versionsPath, originalVersionId),
-    { recursive: true },
-  );
 }

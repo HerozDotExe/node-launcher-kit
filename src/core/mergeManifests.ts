@@ -5,8 +5,10 @@ export function mergeManifests(base: Version, layer: Version) {
   // Those properties should be enough for forge at least
   base.mainClass = layer.mainClass;
 
-  const librariesHashes = base.libraries.map(
-    (lib) => lib.downloads.artifact.sha1,
+  const librariesHashes = base.libraries.filter(lib => lib.downloads.artifact).map(
+    (lib) => {
+      return lib.downloads.artifact.sha1
+    },
   );
 
   for (const lib of layer.libraries) {
@@ -14,14 +16,18 @@ export function mergeManifests(base: Version, layer: Version) {
       base.libraries.push(lib);
   }
 
+  // modern versions
   if (layer.arguments && base.arguments) {
-    // modern versions
-    for (const arg of layer.arguments.game) {
-      base.arguments.game.push(arg);
+    if (layer.arguments.game) {
+      for (const arg of layer.arguments.game) {
+        base.arguments.game.push(arg);
+      }
     }
 
-    for (const arg of layer.arguments.jvm) {
-      base.arguments.jvm.push(arg);
+    if (layer.arguments.jvm) {
+      for (const arg of layer.arguments.jvm) {
+        base.arguments.jvm.push(arg);
+      }
     }
   } else {
     // older versions

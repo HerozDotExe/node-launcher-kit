@@ -185,12 +185,13 @@ export class Instance extends EventEmitter<InstanceEvents> {
           case "forge":
           case "neoforge":
             await installForge(
-              this.version!,
+              this.versionManifest!,
               this.modloader,
               this.javaExecutable!,
               this.paths!.root,
+              this.instanceLocation!,
               this.paths!.libraries!,
-              this.paths!.versions!,
+              this.paths!.versions!
             );
             break;
           default:
