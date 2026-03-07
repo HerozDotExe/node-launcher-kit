@@ -39,7 +39,7 @@ async function downloadJar(
     } else if (modloader.name === "neoforge") {
       filePath = path.join(
         destination,
-        `neoforge-${modloader.version}5-installer.jar`,
+        `neoforge-${modloader.version}-installer.jar`,
       );
       await downloadFile({
         url: `https://maven.neoforged.net/releases/net/neoforged/neoforge/${modloader.version}/neoforge-${modloader.version}-installer.jar`,
