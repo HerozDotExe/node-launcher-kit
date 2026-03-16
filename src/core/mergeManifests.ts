@@ -3,36 +3,62 @@ import { Version } from "../utils/types";
 export function mergeManifests(base: Version, layer: Version) {
   // Copy needed properties to base
   // Those properties should be enough for forge at least
-  base.mainClass = layer.mainClass;
+  const result = { ...base }
+  result.libraries = [];
+  result.mainClass = layer.mainClass;
+  console.log(base)
 
-  const librariesHashes = base.libraries.filter(lib => lib.downloads.artifact).map(
-    (lib) => {
-      return lib.downloads.artifact.sha1
-    },
-  );
+  // const librariesNames = base.libraries.map(
+  //   (lib) => {
+  //     return lib.name
+  //   },
+  // );
 
-  for (const lib of layer.libraries) {
-    if (!librariesHashes.includes(lib.downloads.artifact.sha1)) // remove duplicates
-      base.libraries.push(lib);
+  // for (const lib of layer.libraries) {
+  //   // remove duplicates
+  //   if (!librariesNames.includes(lib.name)) {
+  //     base.libraries.push(lib);
+  //   }
+  // }
+
+  for (const bLib of base.libraries) {
+    let isInLayer = false
+    for (const lLib of layer.libraries) {
+      const lId = lLib.name.split(":")[1]
+      const bId = bLib.name.split(":")[1]
+
+      if (lId === bId) {
+        isInLayer = true
+        break
+      }
+    }
+
+    if (!isInLayer) {
+      result.libraries.push(bLib)
+    }
+  }
+
+  for (const lLib of layer.libraries) {
+    result.libraries.push(lLib)
   }
 
   // modern versions
-  if (layer.arguments && base.arguments) {
+  if (layer.arguments && result.arguments) {
     if (layer.arguments.game) {
       for (const arg of layer.arguments.game) {
-        base.arguments.game.push(arg);
+        result.arguments.game.push(arg);
       }
     }
 
     if (layer.arguments.jvm) {
       for (const arg of layer.arguments.jvm) {
-        base.arguments.jvm.push(arg);
+        result.arguments.jvm.push(arg);
       }
     }
   } else {
     // older versions
-    base.minecraftArguments = layer.minecraftArguments
+    result.minecraftArguments = layer.minecraftArguments
   }
 
-  return base;
+  return result;
 }

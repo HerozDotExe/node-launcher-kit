@@ -9,12 +9,25 @@ export function getLibraries(versionManifest: Version, librariesRoot: string) {
   for (const key in versionManifest.libraries) {
     if (Object.prototype.hasOwnProperty.call(versionManifest.libraries, key)) {
       const library = versionManifest.libraries[key];
-      if (isNeeded(library) && library.downloads.artifact) {
-        libs.push({
-          url: library.downloads.artifact.url,
-          path: path.join(librariesRoot, library.downloads.artifact.path),
-          size: library.downloads.artifact.size,
-        });
+      if (library.downloads) {
+        if (isNeeded(library) && library.downloads.artifact) {
+          libs.push({
+            url: library.downloads.artifact.url,
+            path: path.join(librariesRoot, library.downloads.artifact.path),
+            size: library.downloads.artifact.size,
+          });
+        }
+      } else {
+        // forge lib ?
+        if (!library.rules && !library.downloads && !library.natives) {
+          const parsedLib = library.name.split(":")
+          const libPath = path.join(parsedLib[0].replaceAll(".", "/"), parsedLib[1], parsedLib[2], `${parsedLib[1]}-${parsedLib[2]}.jar`)
+          libs.push({
+            url: "",
+            path: path.join(librariesRoot, libPath),
+            size: 0,
+          });
+        }
       }
     }
   }

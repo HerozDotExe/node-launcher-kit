@@ -163,7 +163,7 @@ export async function generateLaunchArguments(
   } else {
     console.log(versionManifest.minecraftArguments)
     game = fillArguments(
-      versionManifest.minecraftArguments,
+      versionManifest.minecraftArguments!,
       versionManifest,
       assetsPath,
       instancePath,

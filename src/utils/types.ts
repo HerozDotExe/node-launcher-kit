@@ -93,13 +93,13 @@ type Rules = {
 
 export type Argument =
   | {
-      rules: Rules[];
-      value: string[] | string;
-    }
+    rules: Rules[];
+    value: string[] | string;
+  }
   | string;
 
 export type Library = {
-  downloads: {
+  downloads?: {
     artifact: {
       path: string;
       sha1: string;
@@ -120,7 +120,7 @@ export type Version = {
     game: Argument[];
     jvm: Argument[];
   };
-  minecraftArguments: string;
+  minecraftArguments?: string;
   assetIndex: {
     id: string;
     sha1: string;
