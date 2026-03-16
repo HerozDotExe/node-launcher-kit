@@ -7,7 +7,7 @@ import fs from "fs/promises";
 
 async function patchFileLog4j(xmlDestination: string) {
   const original = await fs.readFile(xmlDestination, { encoding: "utf-8" })
-  await fs.writeFile(xmlDestination, original.replace("<LegacyXMLLayout />", ""))
+  await fs.writeFile(xmlDestination, original.replace("<LegacyXMLLayout />", "").replace("<XMLLayout />", ""))
 }
 
 export async function getArgument(
