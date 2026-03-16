@@ -9,7 +9,7 @@ import {
 import * as core from "../core";
 import path from "path";
 import { EventEmitter } from "node:events";
-import { InstallError, LaunchError } from "../utils/errors";
+import { throwLaunch, throwInstall } from "../utils/errors";
 import { installForge } from "../core/modloaders";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
@@ -105,8 +105,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         this.versionLocation!,
       );
     } catch (original) {
-      const error = new InstallError("installInit", original);
-      error.throw();
+      throwInstall("installInit", original, this)
     }
 
     try {
@@ -127,8 +126,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
       });
       await librariesDownloader.run();
     } catch (original) {
-      const error = new InstallError("libraries", original);
-      error.throw();
+      throwInstall("libraries", original, this)
     }
 
     try {
@@ -148,8 +146,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
       });
       await assetsDownloader.run();
     } catch (original) {
-      const error = new InstallError("assets", original);
-      error.throw();
+      throwInstall("assets", original, this)
     }
 
     try {
@@ -169,14 +166,12 @@ export class Instance extends EventEmitter<InstanceEvents> {
       });
       await nativesDownloader.run();
     } catch (original) {
-      const error = new InstallError("natives", original);
-      error.throw();
+      throwInstall("natives", original, this)
     }
 
     const javaError = await checkJava(this.javaExecutable!)
     if (javaError) {
-      const error = new InstallError("java", javaError)
-      error.throw()
+      throwInstall("java", javaError, this)
     }
 
     if (this.modloader) {
@@ -198,8 +193,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
             throw new Error("Unknown modloader");
         }
       } catch (original) {
-        const error = new InstallError("modloader", original);
-        error.throw();
+        throwInstall("modloader", original, this)
       }
     }
   }
@@ -210,8 +204,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         try {
           await this.initialize();
         } catch (original) {
-          const error = new InstallError("launchInit", original);
-          error.throw();
+          throw throwLaunch(original, this)
         }
       }
 
@@ -269,19 +262,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
       return process;
     } catch (original) {
-      const error = new LaunchError(
-        {
-          version: this.version!,
-          auth: this.auth!,
-          paths: this.paths!,
-          customGameArgs: this.args.game!,
-          customJvmArgs: this.args.java!,
-          versionManifest: this.versionManifest!,
-          modloader: this.modloader!,
-        },
-        original as Error,
-      );
-      throw error.throw();
+      throw throwLaunch(original, this)
     }
   }
 }

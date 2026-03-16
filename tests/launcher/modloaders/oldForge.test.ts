@@ -4,8 +4,8 @@ import path from "path";
 import fs from "fs/promises";
 
 const gameRoot = path.join(import.meta.dirname, "..", "temp");
-await fs.rm(gameRoot, { recursive: true, force: true });
-await fs.mkdir(gameRoot, { recursive: true });
+// await fs.rm(gameRoot, { recursive: true, force: true });
+// await fs.mkdir(gameRoot, { recursive: true });
 
 test("launch game", { timeout: 0 }, async () => {
   const instance = new Instance();
@@ -13,14 +13,14 @@ test("launch game", { timeout: 0 }, async () => {
 
   javaManager.on("progress", console.log)
 
-  const java = await javaManager.use(await getJavaComponent("1.12.2"))
+  // const java = await javaManager.use(await getJavaComponent("1.12.2"))
 
   const auth = offlineAuth("player");
 
-  instance.setVersion("1.7.10");
+  instance.setVersion("1.7.1001");
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
-  instance.setJavaExecutable(java)
+  instance.setJavaExecutable("java")
   instance.setModLoader("forge", "10.13.4.1614");
 
   instance.on("progress", console.log);

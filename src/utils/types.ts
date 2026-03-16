@@ -191,7 +191,7 @@ export type Paths = {
   javaRoot?: string;
 };
 
-export type LaunchErrorInfos = {
+export type LaunchErrorConfig = {
   version: string;
   paths: Paths;
   auth: Auth;
