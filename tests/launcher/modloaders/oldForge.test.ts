@@ -17,11 +17,11 @@ test("launch game", { timeout: 0 }, async () => {
 
   const auth = offlineAuth("player");
 
-  instance.setVersion("1.12.2");
+  instance.setVersion("1.7.10");
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
   instance.setJavaExecutable(java)
-  instance.setModLoader("forge", "14.23.5.2864");
+  instance.setModLoader("forge", "10.13.4.1614");
 
   instance.on("progress", console.log);
 
