@@ -1,5 +1,5 @@
 import { test } from "vitest";
-import { Instance, offlineAuth, RuntimeManager, getJavaComponent } from "../../../dist/index.js";
+import { Instance, offlineAuth, RuntimeManager, getJavaComponent } from "../../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 
@@ -21,7 +21,7 @@ test("launch game", { timeout: 0 }, async () => {
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
   instance.setJavaExecutable(java)
-  instance.setModLoader("neoforge", "21.1.217");
+  instance.setModLoader("forge", "52.1.8");
 
   instance.on("progress", console.log);
 

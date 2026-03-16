@@ -141,8 +141,7 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Test temp folder
-tests/core/temp
-tests/launcher/temp
+tests/temp
 
 # Test files
 handler.js
