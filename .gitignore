@@ -142,9 +142,15 @@ vite.config.ts.timestamp-*
 
 # Test temp folder
 tests/temp
+tests/vanilla/*
+tests/modloaders/forge/*
+tests/modloaders/neoforge/*
 
 # Test files
 handler.js
 launcher.js
 custom-launch.txt
 vanilla-launch.txt
+
+# Just a file with the path to my java executables
+javaPath.txt

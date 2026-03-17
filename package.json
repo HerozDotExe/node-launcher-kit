@@ -27,11 +27,12 @@
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^16.4.0",
+    "happy-dom": "^20.8.4",
     "p-queue": "^8.1.1",
     "prettier": "3.6.2",
     "tsup": "^8.5.0",
     "typescript-eslint": "^8.44.1",
     "uuid": "^13.0.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.0"
   }
 }
