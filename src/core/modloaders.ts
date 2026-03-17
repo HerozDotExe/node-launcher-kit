@@ -58,7 +58,8 @@ async function downloadJar(
       });
     }
   } catch (original) {
-    const error = new InstallError("modloader", original, "Check that the version of the modloader exists.");
+    //@ts-expect-error no access to instance
+    const error = new InstallError("modloader", null, original, "Check that the version of the modloader exists.");
     error.throw();
   }
 
