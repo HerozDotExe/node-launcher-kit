@@ -5,7 +5,7 @@ import { LauncherProfiles, Modloader, Version } from "../utils/types";
 import fs from "fs/promises";
 import { execSync, spawn } from "child_process";
 import { version as packageVersion } from "../../package.json";
-import { ensureDir, readJson } from "../utils/fs";
+import { ensureDir, exists, readJson } from "../utils/fs";
 import { InstallError } from "../utils/errors";
 import AdmZip from "adm-zip";
 
@@ -72,7 +72,6 @@ export function runForgeInstaller(
   fakeLauncher: string,
   installType: "Client" | "Server"
 ) {
-  console.log(execSync(`${javaExecutable} -version`).toString());
   console.log(
     `[nlk ${packageVersion}] Running forge installer : "${javaExecutable} -jar ${forgeInstallerPath} --install${installType} ${path.join(fakeLauncher)}"`,
   );
@@ -124,6 +123,18 @@ export async function installForge(
   librariesPath: string,
   versionsPath: string
 ) {
+  const forgeLibDir = path.join(root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${modloader.version}`)
+  const neoForgeLibDir = path.join(root, "libraries", "net", "neoforged", "neoforge", `${modloader.version}`)
+
+  // older forge jar path
+  const universalDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${modloader.version}.jar`)
+  // newer forge jar path
+  const forgeClientDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${modloader.version}-client.jar`)
+  // neoforge jar path
+  const neoForgeClientDestination = path.join(neoForgeLibDir, `neoforge-${modloader.version}-client.jar`)
+
+  if (await exists(universalDestination) || await exists(forgeClientDestination) || await exists(neoForgeClientDestination)) return;
+
   const tempFolder = await getTempFolder("forge");
   // Download and extract installer file
   const forgeInstallerPath = await downloadJar(
@@ -177,7 +188,7 @@ export async function installForge(
     await ensureDir(path.join(root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${modloader.version}`), true)
     await fs.cp(
       universalPath,
-      path.join(root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${modloader.version}`, `forge-${versionManifest.id}-${modloader.version}.jar`),
+      universalDestination,
       { recursive: true },
     );
 
