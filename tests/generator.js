@@ -88,7 +88,6 @@ await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
         const start = `1.${parsedVersion[0]}.${parsedVersion[1]}`
         return start
     })).map(arr => arr[arr.length-1])
-    console.log(versions)
 
     for (const neoForgeVersion of versions) {
         const parsedVersion = neoForgeVersion.split(".")
