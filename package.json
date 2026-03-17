@@ -13,6 +13,7 @@
   },
   "scripts": {
     "build": "tsup",
+    "testGen": "node ./tests/generator.js",
     "test": "tsup && vitest --run"
   },
   "keywords": [],
