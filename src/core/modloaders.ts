@@ -10,7 +10,7 @@ import { InstallError } from "../utils/errors";
 import AdmZip from "adm-zip";
 
 const versionWithDoubleName = ["1.9.4", "1.9.0", "1.8.9", "1.8.8", "1.8", "1.7.10"]
-function fixVersionWithDoubleName(version: string, modloader: Modloader) {
+export function fixVersionWithDoubleName(version: string, modloader: Modloader) {
   if (versionWithDoubleName.includes(version)) {
     // these versions have a different file name on forge's maven
     modloader.version = modloader.version + `-${version}`
@@ -25,7 +25,6 @@ async function downloadJar(
   destination: string,
 ) {
   let filePath = "";
-  modloader = fixVersionWithDoubleName(minecraftVersion, modloader)
   try {
     if (modloader.name === "forge") {
       if (type === "universal") {

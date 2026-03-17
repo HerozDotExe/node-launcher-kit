@@ -10,7 +10,7 @@ import * as core from "../core";
 import path from "path";
 import { EventEmitter } from "node:events";
 import { throwLaunch, throwInstall } from "../utils/errors";
-import { installForge } from "../core/modloaders";
+import { fixVersionWithDoubleName, installForge } from "../core/modloaders";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
 import { checkJava } from "./java";
@@ -28,12 +28,14 @@ export class Instance extends EventEmitter<InstanceEvents> {
   instanceLocation?: string;
   ready: boolean;
   javaExecutable?: string;
+  forgeVersionPatched: boolean;
 
   constructor() {
     super();
     this.args = { java: "", game: "" };
     this.ram = { max: "2G", min: "2G" };
     this.ready = false;
+    this.forgeVersionPatched = false;
   }
 
   setVersion(version: string) {
@@ -83,6 +85,10 @@ export class Instance extends EventEmitter<InstanceEvents> {
   }
 
   private async initialize() {
+    if (this.modloader && !this.forgeVersionPatched) {
+      this.modloader = fixVersionWithDoubleName(this.version!, this.modloader)
+      this.forgeVersionPatched = true
+    }
     if (!this.javaExecutable || !this.paths?.root || !this.version || !this.auth) {
       throw new Error("Missing options")
     }
