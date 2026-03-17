@@ -9,11 +9,11 @@ function redactToken(config: LaunchErrorConfig) {
 }
 
 export class InstallError extends Error {
-  config: LaunchErrorConfig;
+  config: LaunchErrorConfig | null;
   step: string;
   original: Error;
   moreInfo?: string;
-  constructor(step: string, config: LaunchErrorConfig, original: unknown, moreInfo?: string) {
+  constructor(step: string, config: LaunchErrorConfig | null, original: unknown, moreInfo?: string) {
     super();
     this.step = step;
     this.original = original as Error;
@@ -31,7 +31,7 @@ export class InstallError extends Error {
       console.error(this.moreInfo);
     }
 
-    console.dir(redactToken(this.config));
+    if (this.config) console.dir(redactToken(this.config));
 
     throw this;
   }

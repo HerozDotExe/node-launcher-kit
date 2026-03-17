@@ -157,7 +157,6 @@ export class RuntimeManager extends EventEmitter<InstanceEvents> {
         });
         await javaDownloader.run();
       } catch (original) {
-        //@ts-expect-error no access to instance
         new InstallError("java", null, original, "An error happened while downloading java.")
       }
     }

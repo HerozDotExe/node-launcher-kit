@@ -3,7 +3,7 @@ import { downloadFile } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
 import { LauncherProfiles, Modloader, Version } from "../utils/types";
 import fs from "fs/promises";
-import { execSync, spawn } from "child_process";
+import { spawn } from "child_process";
 import { version as packageVersion } from "../../package.json";
 import { ensureDir, exists, readJson } from "../utils/fs";
 import { InstallError } from "../utils/errors";
@@ -57,7 +57,6 @@ async function downloadJar(
       });
     }
   } catch (original) {
-    //@ts-expect-error no access to instance
     const error = new InstallError("modloader", null, original, "Check that the version of the modloader exists.");
     error.throw();
   }
