@@ -21,7 +21,7 @@ test("launch game", { timeout: 0, tags:["full", "forge"] }, async () => {
   instance.setPaths(gameRoot);
   instance.setAuth(auth);
   instance.setJavaExecutable(java)
-  instance.setModLoader("forge", "${forge_version}");
+  instance.setModLoader("${modloader}", "${modloader_version}");
 
   instance.on("progress", console.log);
 
