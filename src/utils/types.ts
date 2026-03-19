@@ -184,11 +184,10 @@ export type LaunchArguments = { command: string; args: string[] };
 
 export type Paths = {
   root: string;
+  instance: string;
   versions?: string;
   assets?: string;
   libraries?: string;
-  instances?: string;
-  javaRoot?: string;
 };
 
 export type LaunchErrorConfig = {
@@ -231,4 +230,14 @@ export interface InstanceEvents {
     doneSize: number,
     totalSize: number,
   ];
+}
+
+export type ProcessArgs = {
+  game?: string,
+  java?: string
+}
+
+export type ProcessRam = {
+  max?: string,
+  min?: string
 }

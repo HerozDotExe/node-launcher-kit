@@ -68,10 +68,10 @@ await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
                 let result = ""
                 if (java) {
                     const template = await fs.readFile(path.join(tempFolder, "forge-java.test.ts.template"), { encoding: "utf-8" })
-                    result = template.replaceAll("${version}", version).replace("${modloader}", "forge").replace("${modloader_version}", forgeVersion).replace("${java}", await getJava(version))
+                    result = template.replaceAll("${version}", version).replaceAll("${modloader}", "forge").replaceAll("${modloader_version}", forgeVersion).replaceAll("${java}", await getJava(version))
                 } else {
                     const template = await fs.readFile(path.join(tempFolder, "forge.test.ts.template"), { encoding: "utf-8" })
-                    result = template.replaceAll("${version}", version).replace("${modloader}", "forge").replace("${modloader_version}", forgeVersion)
+                    result = template.replaceAll("${version}", version).replaceAll("${modloader}", "forge").replaceAll("${modloader_version}", forgeVersion)
                 }
                 await fs.writeFile(path.join(tempFolder, `modloaders/forge/forge-${version}-${forgeVersion}.test.ts`), result)
                 console.log(`Done forge ${forgeVersion}`)
@@ -100,10 +100,10 @@ await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
             let result = ""
             if (java) {
                 const template = await fs.readFile(path.join(tempFolder, "forge-java.test.ts.template"), { encoding: "utf-8" })
-                result = template.replaceAll("${version}", mcVersion).replace("${modloader}", "neoforge").replace("${modloader_version}", neoForgeVersion).replace("${java}", await getJava(mcVersion))
+                result = template.replaceAll("${version}", mcVersion).replaceAll("${modloader}", "neoforge").replaceAll("${modloader_version}", neoForgeVersion).replaceAll("${java}", await getJava(mcVersion))
             } else {
                 const template = await fs.readFile(path.join(tempFolder, "forge.test.ts.template"), { encoding: "utf-8" })
-                result = template.replaceAll("${version}", mcVersion).replace("${modloader}", "neoforge").replace("${modloader_version}", neoForgeVersion)
+                result = template.replaceAll("${version}", mcVersion).replaceAll("${modloader}", "neoforge").replaceAll("${modloader_version}", neoForgeVersion)
             }
             await fs.writeFile(path.join(tempFolder, `modloaders/neoforge/neoforge-${mcVersion}-${neoForgeVersion}.test.ts`), result)
             console.log(`Done neoforge ${neoForgeVersion}`)
@@ -118,7 +118,7 @@ await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
             let result = ""
             if (java) {
                 const template = await fs.readFile(path.join(tempFolder, "vanilla-java.test.ts.template"), { encoding: "utf-8" })
-                result = template.replaceAll("${version}", v.id).replace("${java}", await getJava(v.id))
+                result = template.replaceAll("${version}", v.id).replaceAll("${java}", await getJava(v.id))
             } else {
                 const template = await fs.readFile(path.join(tempFolder, "vanilla.test.ts.template"), { encoding: "utf-8" })
                 result = template.replaceAll("${version}", v.id)

@@ -8,57 +8,57 @@ import { version as packageVersion } from "../../package.json";
 import { ensureDir, exists, readJson } from "../utils/fs";
 import { InstallError } from "../utils/errors";
 import AdmZip from "adm-zip";
+import { Config } from "../launcher/instance";
 
 const versionWithDoubleName = ["1.9.4", "1.9.0", "1.8.9", "1.8.8", "1.8", "1.7.10"]
 export function fixVersionWithDoubleName(version: string, modloader: Modloader) {
+  let modLoaderVersion = modloader.version
   if (versionWithDoubleName.includes(version)) {
     // these versions have a different file name on forge's maven
-    modloader.version = modloader.version + `-${version}`
+    modLoaderVersion = modloader.version + `-${version}`
   }
-  return modloader
+  return modLoaderVersion
 }
 
 async function downloadJar(
-  minecraftVersion: string,
-  modloader: Modloader,
+  config: ModloaderConfig,
   type: "universal" | "installer",
   destination: string,
 ) {
   let filePath = "";
   try {
-    if (modloader.name === "forge") {
+    if (config.modloader.name === "forge") {
       if (type === "universal") {
         filePath = path.join(
           destination,
-          `forge-${minecraftVersion}-${modloader.version}-universal.jar`,
+          `forge-${config.version}-${config.modloader.version}-universal.jar`,
         );
         await downloadFile({
-          url: `https://maven.minecraftforge.net/net/minecraftforge/forge/${minecraftVersion}-${modloader.version}/forge-${minecraftVersion}-${modloader.version}-universal.jar`,
+          url: `https://maven.minecraftforge.net/net/minecraftforge/forge/${config.version}-${config.modloader.version}/forge-${config.version}-${config.modloader.version}-universal.jar`,
           path: filePath,
         });
       } else {
         filePath = path.join(
           destination,
-          `forge-${minecraftVersion}-${modloader.version}-installer.jar`,
+          `forge-${config.version}-${config.modloader.version}-installer.jar`,
         );
         await downloadFile({
-          url: `https://maven.minecraftforge.net/net/minecraftforge/forge/${minecraftVersion}-${modloader.version}/forge-${minecraftVersion}-${modloader.version}-installer.jar`,
+          url: `https://maven.minecraftforge.net/net/minecraftforge/forge/${config.version}-${config.modloader.version}/forge-${config.version}-${config.modloader.version}-installer.jar`,
           path: filePath,
         });
       }
-    } else if (modloader.name === "neoforge") {
+    } else if (config.modloader.name === "neoforge") {
       filePath = path.join(
         destination,
-        `neoforge-${modloader.version}-installer.jar`,
+        `neoforge-${config.modloader.version}-installer.jar`,
       );
       await downloadFile({
-        url: `https://maven.neoforged.net/releases/net/neoforged/neoforge/${modloader.version}/neoforge-${modloader.version}-installer.jar`,
+        url: `https://maven.neoforged.net/releases/net/neoforged/neoforge/${config.modloader.version}/neoforge-${config.modloader.version}-installer.jar`,
         path: filePath,
       });
     }
-  } catch (original) {
-    const error = new InstallError("modloader", null, original, "Check that the version of the modloader exists.");
-    error.throw();
+  } catch (error) {
+    throw new InstallError("An error occured while downloadng natives", "natives", config, { cause: error })
   }
 
   return filePath;
@@ -112,32 +112,30 @@ function isModernForge(version: string) {
   } else return false
 }
 
+export interface ModloaderConfig extends Config {
+  modloader: Modloader
+}
+
 export async function installForge(
-  versionManifest: Version,
-  modloader: Modloader,
-  javaExecutable: string,
-  root: string,
-  instanceLocation: string,
-  librariesPath: string,
-  versionsPath: string
+  config: ModloaderConfig,
+  versionManifest: Version
 ) {
-  const forgeLibDir = path.join(root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${modloader.version}`)
-  const neoForgeLibDir = path.join(root, "libraries", "net", "neoforged", "neoforge", `${modloader.version}`)
+  const forgeLibDir = path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${config.modloader.version}`)
+  const neoForgeLibDir = path.join(config.paths.root, "libraries", "net", "neoforged", "neoforge", `${config.modloader.version}`)
 
   // older forge jar path
-  const universalDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${modloader.version}.jar`)
+  const universalDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${config.modloader.version}.jar`)
   // newer forge jar path
-  const forgeClientDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${modloader.version}-client.jar`)
+  const forgeClientDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${config.modloader.version}-client.jar`)
   // neoforge jar path
-  const neoForgeClientDestination = path.join(neoForgeLibDir, `neoforge-${modloader.version}-client.jar`)
+  const neoForgeClientDestination = path.join(neoForgeLibDir, `neoforge-${config.modloader.version}-client.jar`)
 
   if (await exists(universalDestination) || await exists(forgeClientDestination) || await exists(neoForgeClientDestination)) return;
 
   const tempFolder = await getTempFolder("forge");
   // Download and extract installer file
   const forgeInstallerPath = await downloadJar(
-    versionManifest.id,
-    modloader,
+    config,
     "installer",
     tempFolder,
   );
@@ -149,13 +147,13 @@ export async function installForge(
 
   const modernInstaller = isModernForge(versionManifest.id)
 
-  await runForgeInstaller(javaExecutable, forgeInstallerPath, fakeLauncher, modernInstaller ? "Client" : "Server");
+  await runForgeInstaller(config.javaExecutable, forgeInstallerPath, fakeLauncher, modernInstaller ? "Client" : "Server");
 
   // Copy libraries and versions files
   for (const file of await fs.readdir(path.join(fakeLauncher, "libraries"))) {
     await fs.cp(
       path.join(fakeLauncher, "libraries", file),
-      path.join(librariesPath, file),
+      path.join(config.paths.libraries, file),
       {
         recursive: true,
       },
@@ -173,17 +171,15 @@ export async function installForge(
 
     await fs.cp(
       path.join(fakeLauncher, "versions", originalVersionId),
-      path.join(versionsPath, originalVersionId),
+      path.join(config.paths.versions, originalVersionId),
       { recursive: true },
     );
   } else {
     // Older versions (from 1.5.2 to 1.12.2, even older versions are not supported)
-    //await runForgeInstaller(javaExecutable, forgeInstallerPath, fakeLauncher, "Server");
-
-    const universalPath = path.join(fakeLauncher, `forge-${versionManifest.id}-${modloader.version}-universal.jar`)
+    const universalPath = path.join(fakeLauncher, `forge-${versionManifest.id}-${config.modloader.version}-universal.jar`)
 
     // Copy forge jar
-    await ensureDir(path.join(root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${modloader.version}`), true)
+    await ensureDir(path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${config.modloader.version}`), true)
     await fs.cp(
       universalPath,
       universalDestination,
@@ -192,7 +188,7 @@ export async function installForge(
 
     // Copy version json
     const zip = new AdmZip(universalPath)
-    zip.extractEntryTo("version.json", path.join(versionsPath, `${versionManifest.id}-forge-${modloader.version}`))
-    await fs.rename(path.join(versionsPath, `${versionManifest.id}-forge-${modloader.version}`, "version.json"), path.join(versionsPath, `${versionManifest.id}-forge-${modloader.version}`, `${versionManifest.id}-forge-${modloader.version}.json`))
+    zip.extractEntryTo("version.json", path.join(config.paths.versions, `${versionManifest.id}-forge-${config.modloader.version}`))
+    await fs.rename(path.join(config.paths.versions, `${versionManifest.id}-forge-${config.modloader.version}`, "version.json"), path.join(config.paths.versions, `${versionManifest.id}-forge-${config.modloader.version}`, `${versionManifest.id}-forge-${config.modloader.version}.json`))
   }
 }

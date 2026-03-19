@@ -1,41 +1,39 @@
 import path from "path";
 import { isNeeded } from "../utils/rules";
-import { Argument, Auth, Version } from "../utils/types";
+import { Argument, Version } from "../utils/types";
 import { getLibraries } from "./libraries";
 import { version as packageVersion } from "../../package.json";
 import { getArgument } from "./log4j";
+import { Config } from "../launcher/instance";
 
 // Fill templates
 function fillArguments(
   arg: string,
   versionManifest: Version,
-  assetsPath: string,
-  instancePath: string,
-  librariesPath: string,
-  classPaths: string,
-  auth: Auth,
+  config: Config,
+  classPaths: string
 ) {
   const argumentsToFill: { [key: string]: string } = {
-    "${natives_directory}": path.join(instancePath, "natives"),
+    "${natives_directory}": path.join(config.paths.instance, "natives"),
     "${launcher_name}": "nlk",
     "${launcher_version}": packageVersion,
     "${classpath}": classPaths,
-    "${library_directory}": librariesPath,
-    "${game_directory}": instancePath,
+    "${library_directory}": config.paths.libraries,
+    "${game_directory}": config.paths.instance,
     "${version_name}": versionManifest.id,
     "${version_type}": versionManifest.type,
     "${assets_index_name}": versionManifest.assets,
-    "${assets_root}": assetsPath,
-    "${game_assets}": assetsPath,
-    "${auth_access_token}": auth.access_token,
-    "${auth_session}": auth.access_token,
-    "${auth_player_name}": auth.name,
-    "${auth_uuid}": auth.uuid,
-    "${auth_xuid}": auth.meta?.xuid || auth.access_token,
-    "${user_properties}": auth.user_properties,
-    "${user_type}": auth.meta?.type || "msa",
+    "${assets_root}": config.paths.assets,
+    "${game_assets}": config.paths.assets,
+    "${auth_access_token}": config.auth.access_token,
+    "${auth_session}": config.auth.access_token,
+    "${auth_player_name}": config.auth.name,
+    "${auth_uuid}": config.auth.uuid,
+    "${auth_xuid}": config.auth.meta?.xuid || config.auth.access_token,
+    "${user_properties}": config.auth.user_properties,
+    "${user_type}": config.auth.meta?.type || "msa",
     "${clientid}":
-      auth.meta?.clientId || auth.client_token || auth.access_token,
+      config.auth.meta?.clientId || config.auth.client_token || config.auth.access_token,
     "${classpath_separator}": path.delimiter,
   };
 
@@ -54,11 +52,8 @@ function parseArg(
   this: string[],
   arg: Argument,
   versionManifest: Version,
-  assetsPath: string,
-  instancePath: string,
-  librariesPath: string,
-  classPaths: string,
-  auth: Auth,
+  config: Config,
+  classPaths: string
 ) {
   if (isNeeded(arg)) {
     if (typeof arg === "string") {
@@ -66,11 +61,8 @@ function parseArg(
         fillArguments(
           arg,
           versionManifest,
-          assetsPath,
-          instancePath,
-          librariesPath,
-          classPaths,
-          auth,
+          config,
+          classPaths
         ),
       );
     } else if (typeof arg.value === "string") {
@@ -78,24 +70,18 @@ function parseArg(
         fillArguments(
           arg.value,
           versionManifest,
-          assetsPath,
-          instancePath,
-          librariesPath,
-          classPaths,
-          auth,
-        ),
-      );
+          config,
+          classPaths
+        )
+      )
     } else if (arg.value.length > 1) {
       for (const e of arg.value) {
         this.push(
           fillArguments(
             e,
             versionManifest,
-            assetsPath,
-            instancePath,
-            librariesPath,
-            classPaths,
-            auth,
+            config,
+            classPaths
           ),
         );
       }
@@ -121,23 +107,16 @@ function generateClassPaths(
 
 export async function generateLaunchArguments(
   versionManifest: Version,
-  javaExecutable: string,
-  instancePath: string,
-  librariesPath: string,
-  assetsPath: string,
-  versionRoot: string,
-  auth: Auth,
-  customArgs: { java: string; game: string },
-  ram: { max: string; min: string },
+  config: Config
 ) {
   const jvm: string[] = [];
   let game: string[] = [];
 
-  const versionJar = path.join(versionRoot, `${versionManifest.id}.jar`);
+  const versionJar = path.join(config.paths.versions, versionManifest.id, `${versionManifest.id}.jar`);
 
   const classPaths = generateClassPaths(
     versionManifest,
-    librariesPath,
+    config.paths.libraries,
     versionJar,
   );
 
@@ -145,11 +124,8 @@ export async function generateLaunchArguments(
     parseArg.apply(args, [
       arg,
       versionManifest,
-      assetsPath,
-      instancePath,
-      librariesPath,
+      config,
       classPaths,
-      auth,
     ]);
   }
 
@@ -161,45 +137,41 @@ export async function generateLaunchArguments(
       p(game, arg);
     }
   } else {
-    console.log(versionManifest.minecraftArguments)
     game = fillArguments(
       versionManifest.minecraftArguments!,
       versionManifest,
-      assetsPath,
-      instancePath,
-      librariesPath,
-      classPaths,
-      auth,
+      config,
+      classPaths
     ).split(" ");
 
-    jvm.push(`-Djava.library.path=${path.join(instancePath, "natives")}`);
+    jvm.push(`-Djava.library.path=${path.join(config.paths.instance, "natives")}`);
     jvm.push(`-Dminecraft.launcher.brand=nlk`);
     jvm.push(`-Dminecraft.launcher.version=${packageVersion}`);
     jvm.push(
-      `-Dminecraft.client.jar=${path.join(versionRoot, `${versionManifest.id}.jar`)}`,
+      `-Dminecraft.client.jar=${path.join(config.paths.versions, versionManifest.id, `${versionManifest.id}.jar`)}`,
     );
     jvm.push("-cp");
     jvm.push(classPaths)
   }
 
-  if (customArgs.java !== "") {
-    for (const arg of customArgs.java.split(" ")) {
+  if (config.args.java !== "") {
+    for (const arg of config.args.java.split(" ")) {
       jvm.push(arg);
     }
   }
 
-  if (customArgs.game !== "") {
-    for (const arg of customArgs.game.split(" ")) {
+  if (config.args.game !== "") {
+    for (const arg of config.args.game.split(" ")) {
       game.push(arg);
     }
   }
 
-  const log4j = await getArgument(versionManifest, versionRoot);
+  const log4j = await getArgument(versionManifest, config.paths.versions);
 
   let launchArguments = [
     ...jvm,
-    `-Xms${ram.min}`,
-    `-Xmx${ram.max}`,
+    `-Xms${config.ram.min}`,
+    `-Xmx${config.ram.max}`,
     "-XX:+UnlockExperimentalVMOptions",
     "-XX:+UseG1GC",
     "-XX:G1NewSizePercent=20",
@@ -215,7 +187,7 @@ export async function generateLaunchArguments(
   launchArguments = [...launchArguments, versionManifest.mainClass, ...game,]
 
   return {
-    command: javaExecutable,
+    command: config.javaExecutable,
     args: launchArguments,
   };
 }

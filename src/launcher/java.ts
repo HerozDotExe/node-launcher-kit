@@ -13,7 +13,6 @@ import { ensureDir } from "../utils/fs";
 import { EventEmitter } from "stream";
 import { exec } from "child_process";
 import { arch, os } from "../utils/systemInfo";
-import { InstallError } from "../utils/errors";
 import { getVersionManifest } from "../core/version";
 import { getTempFolder } from "../utils/temp";
 
@@ -114,12 +113,12 @@ async function JavaDownloader(
 }
 
 export async function getJavaComponent(mcVersion: string, versionsRoot?: string) {
-  if(!versionsRoot) {
+  if (!versionsRoot) {
     versionsRoot = await getTempFolder("nlk-versions-cache")
   }
 
   const versionManifest = await getVersionManifest(mcVersion, versionsRoot);
-  
+
   return versionManifest.javaVersion.component
 }
 
@@ -156,8 +155,8 @@ export class RuntimeManager extends EventEmitter<InstanceEvents> {
           );
         });
         await javaDownloader.run();
-      } catch (original) {
-        new InstallError("java", null, original, "An error happened while downloading java.")
+      } catch (error) {
+        throw new Error("An error occured while downloading java", { cause: error })
       }
     }
 

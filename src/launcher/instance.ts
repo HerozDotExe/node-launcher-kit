@@ -1,274 +1,249 @@
-import {
-  Auth,
-  InstanceEvents,
-  Modloader,
-  Paths,
-  SupportedModloaders,
-  Version,
-} from "../utils/types";
-import * as core from "../core";
-import path from "path";
-import { EventEmitter } from "node:events";
-import { throwLaunch, throwInstall } from "../utils/errors";
-import { fixVersionWithDoubleName, installForge } from "../core/modloaders";
+import { EventEmitter } from "node:stream";
+import { Auth, InstanceEvents, Modloader, Paths, ProcessArgs, ProcessRam, Version } from "../utils/types";
+import path from "node:path";
+import { argumentsGenerator, AssetsDownloader, launch, LibrariesDownloader, NativesDownloader, version } from "../core";
+import { ConfigError, InstallError, LaunchError } from "../utils/errors";
+import { checkJava } from "./java";
+import { fixVersionWithDoubleName, installForge, ModloaderConfig } from "../core/modloaders";
+import { ChildProcessWithoutNullStreams } from "node:child_process";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
-import { checkJava } from "./java";
-import { ChildProcessWithoutNullStreams } from "node:child_process";
+
+export interface BaseConfig {
+    version: string;
+    auth: Auth;
+    paths: Paths
+    javaExecutable: string
+    modloader?: Modloader;
+    args?: ProcessArgs;
+    ram?: { max?: string; min?: string }
+}
+
+export interface Config extends BaseConfig {
+    paths: Required<Paths>
+    args: Required<ProcessArgs>
+    ram: Required<ProcessRam>
+}
+
+export function defineConfig(...layers: Partial<BaseConfig>[]) {
+    let config: Partial<BaseConfig> = {} as Partial<BaseConfig>;
+    for (const layer of layers) {
+        config = { ...config, ...layer }
+    }
+    if (!config.auth || !config.paths?.root || !config.paths?.instance || !config.version || !config.javaExecutable) {
+        throw new ConfigError("Invalid config provided", config)
+    }
+
+    config.paths = {
+        root: config.paths.root,
+        instance: config.paths.instance,
+        versions: config.paths.versions ?? path.join(config.paths.root, "versions"),
+        assets: config.paths.assets ?? path.join(config.paths.root, "assets"),
+        libraries: config.paths.libraries ?? path.join(config.paths.root, "libraries"),
+    };
+
+    config.args = { java: config.args?.java ?? "", game: config.args?.game ?? "" };
+
+    config.ram = { max: config.ram?.max ?? "2G", min: config.ram?.min ?? "2G" };
+
+    return config as Config
+}
 
 export class Instance extends EventEmitter<InstanceEvents> {
-  version?: string;
-  modloader?: Modloader;
-  auth?: Auth;
-  paths?: Paths;
-  args: { java: string; game: string };
-  ram: { max: string; min: string };
-  versionManifest?: Version;
-  versionLocation?: string;
-  instanceLocation?: string;
-  ready: boolean;
-  javaExecutable?: string;
-  forgeVersionPatched: boolean;
+    ready: boolean
+    config: Config
+    versionLocation: string
+    versionManifest: Version
 
-  constructor() {
-    super();
-    this.args = { java: "", game: "" };
-    this.ram = { max: "2G", min: "2G" };
-    this.ready = false;
-    this.forgeVersionPatched = false;
-  }
-
-  setVersion(version: string) {
-    this.version = version;
-  }
-
-  setModLoader(name: SupportedModloaders, version: string) {
-    this.modloader = { name, version };
-  }
-
-  setJavaExecutable(path: string) {
-    this.javaExecutable = path;
-  }
-
-  setPaths(paths: Paths | string): void {
-    if (typeof paths === "string") {
-      this.paths = {
-        root: paths,
-        versions: path.join(paths, "versions"),
-        assets: path.join(paths, "assets"),
-        libraries: path.join(paths, "libraries"),
-        instances: path.join(paths, "instances"),
-      };
-    } else {
-      this.paths = {
-        root: paths.root,
-        versions: paths.versions || path.join(paths.root, "versions"),
-        assets: paths.assets || path.join(paths.root, "assets"),
-        libraries: paths.libraries || path.join(paths.root, "libraries"),
-        instances: paths.instances || path.join(paths.root, "instances"),
-      };
-    }
-  }
-
-  setAuth(auth: Auth) {
-    this.auth = auth;
-  }
-
-  setArgs({ java, game }: { java?: string; game?: string }) {
-    this.args.java = java || "";
-    this.args.game = game || "";
-  }
-
-  setRAM({ min, max }: { min?: string; max?: string }) {
-    this.ram.min = min || "2G";
-    this.ram.max = max || "2G";
-  }
-
-  private async initialize() {
-    if (this.modloader && !this.forgeVersionPatched) {
-      this.modloader = fixVersionWithDoubleName(this.version!, this.modloader)
-      this.forgeVersionPatched = true
-    }
-    if (!this.javaExecutable || !this.paths?.root || !this.version || !this.auth) {
-      throw new Error("Missing options")
+    constructor(...layers: Partial<BaseConfig>[]) {
+        super()
+        this.config = defineConfig(...layers)
+        this.ready = false
+        this.versionManifest = {} as Version
+        this.versionLocation = ""
     }
 
-    this.versionLocation = path.join(this.paths.versions!, this.version);
-    this.instanceLocation = path.join(this.paths.instances!, this.version);
+    private async init() {
+        this.versionLocation = path.join(this.config.paths.versions, this.config.version);
 
-    this.versionManifest = await core.version.getVersionManifest(
-      this.version,
-      this.versionLocation,
-    );
-  }
-
-  async install() {
-    try {
-      await this.initialize();
-      this.ready = true;
-      await core.version.downloadJar(
-        this.versionManifest!,
-        this.versionLocation!,
-      );
-    } catch (original) {
-      throwInstall("installInit", original, this)
-    }
-
-    try {
-      const librariesDownloader = await core.LibrariesDownloader(
-        this.paths!.libraries!,
-        this.versionManifest!,
-      );
-
-      librariesDownloader.on("completed", () => {
-        this.emit(
-          "progress",
-          "libraries",
-          librariesDownloader.done,
-          librariesDownloader.total,
-          librariesDownloader.doneSize,
-          librariesDownloader.totalSize,
-        );
-      });
-      await librariesDownloader.run();
-    } catch (original) {
-      throwInstall("libraries", original, this)
-    }
-
-    try {
-      const assetsDownloader = await core.AssetsDownloader(
-        this.paths!.assets!,
-        this.versionManifest!,
-      );
-      assetsDownloader.on("completed", () => {
-        this.emit(
-          "progress",
-          "assets",
-          assetsDownloader.done,
-          assetsDownloader.total,
-          assetsDownloader.doneSize,
-          assetsDownloader.totalSize,
-        );
-      });
-      await assetsDownloader.run();
-    } catch (original) {
-      throwInstall("assets", original, this)
-    }
-
-    try {
-      const nativesDownloader = await core.NativesDownloader(
-        path.join(this.instanceLocation!, "natives"),
-        this.versionManifest!,
-      );
-      nativesDownloader.on("completed", () => {
-        this.emit(
-          "progress",
-          "natives",
-          nativesDownloader.done,
-          nativesDownloader.total,
-          nativesDownloader.doneSize,
-          nativesDownloader.totalSize,
-        );
-      });
-      await nativesDownloader.run();
-    } catch (original) {
-      throwInstall("natives", original, this)
-    }
-
-    const javaError = await checkJava(this.javaExecutable!)
-    if (javaError) {
-      throwInstall("java", javaError, this)
-    }
-
-    if (this.modloader) {
-      try {
-        switch (this.modloader.name) {
-          case "forge":
-          case "neoforge":
-            await installForge(
-              this.versionManifest!,
-              this.modloader,
-              this.javaExecutable!,
-              this.paths!.root,
-              this.instanceLocation!,
-              this.paths!.libraries!,
-              this.paths!.versions!
-            );
-            break;
-          default:
-            throw new Error("Unknown modloader");
+        if (this.config.modloader) {
+            this.config.modloader.version = fixVersionWithDoubleName(this.config.version, this.config.modloader)
         }
-      } catch (original) {
-        throwInstall("modloader", original, this)
-      }
-    }
-  }
 
-  async launch(): Promise<ChildProcessWithoutNullStreams> {
-    try {
-      if (!this.ready) {
+        this.versionManifest = await version.getVersionManifest(
+            this.config.version,
+            this.versionLocation,
+        );
+
+        this.ready = true
+    }
+
+    async install() {
         try {
-          await this.initialize();
-        } catch (original) {
-          throw throwLaunch(original, this)
+            if (!this.ready) await this.init()
+
+            await version.downloadJar(
+                this.versionManifest,
+                this.versionLocation,
+            );
+        } catch (error) {
+            throw new InstallError("An error occured while initializing instance", "install-init", this.config, { cause: error })
         }
-      }
 
-      if (this.modloader) {
-        switch (this.modloader.name) {
-          case "forge": {
-            const forgeVersionManifest = await readJson<Version>(
-              path.join(
-                this.paths!.versions!,
-                `${this.version}-${this.modloader.name}-${this.modloader.version}`,
-                `${this.version}-${this.modloader.name}-${this.modloader.version}.json`,
-              ),
+        try {
+            const librariesDownloader = await LibrariesDownloader(
+                this.config.paths.libraries,
+                this.versionManifest,
             );
 
-            this.versionManifest = mergeManifests(
-              this.versionManifest!,
-              forgeVersionManifest,
-            );
-            break;
-          }
-          case "neoforge":
-            {
-              const neoForgeVersionManifest = await readJson<Version>(
-                path.join(
-                  this.paths!.versions!,
-                  `${this.modloader.name}-${this.modloader.version}`,
-                  `${this.modloader.name}-${this.modloader.version}.json`,
-                ),
-              );
+            librariesDownloader.on("completed", () => {
+                this.emit(
+                    "progress",
+                    "libraries",
+                    librariesDownloader.done,
+                    librariesDownloader.total,
+                    librariesDownloader.doneSize,
+                    librariesDownloader.totalSize,
+                );
+            });
 
-              this.versionManifest = mergeManifests(
+            await librariesDownloader.run();
+        } catch (error) {
+            throw new InstallError("An error occured while downloading libraries", "libraries", this.config, { cause: error })
+        }
+
+        try {
+            const assetsDownloader = await AssetsDownloader(
+                this.config.paths.assets,
+                this.versionManifest,
+            );
+
+            assetsDownloader.on("completed", () => {
+                this.emit(
+                    "progress",
+                    "assets",
+                    assetsDownloader.done,
+                    assetsDownloader.total,
+                    assetsDownloader.doneSize,
+                    assetsDownloader.totalSize,
+                );
+            });
+
+            await assetsDownloader.run();
+        } catch (error) {
+            throw new InstallError("An error occured while downloading assets", "assets", this.config, { cause: error })
+        }
+
+        try {
+            const nativesDownloader = await NativesDownloader(
+                path.join(this.config.paths.instance, "natives"),
                 this.versionManifest!,
-                neoForgeVersionManifest,
-              );
-            }
-            break;
-          default:
-            throw new Error("Unknown modloader");
+            );
+            nativesDownloader.on("completed", () => {
+                this.emit(
+                    "progress",
+                    "natives",
+                    nativesDownloader.done,
+                    nativesDownloader.total,
+                    nativesDownloader.doneSize,
+                    nativesDownloader.totalSize,
+                );
+            });
+            await nativesDownloader.run();
+        } catch (error) {
+            throw new InstallError("An error occured while downloadng natives", "natives", this.config, { cause: error })
         }
-      }
 
-      const args = await core.arguments.generateLaunchArguments(
-        this.versionManifest!,
-        this.javaExecutable!,
-        this.instanceLocation!,
-        this.paths!.libraries!,
-        this.paths!.assets!,
-        this.versionLocation!,
-        this.auth!,
-        this.args,
-        this.ram
-      );
+        const javaError = await checkJava(this.config.javaExecutable)
+        if (javaError) {
+            throw new InstallError("Invalid java provieded", "java", this.config, { cause: javaError })
+        }
 
-      const process = core.launch(args, this.instanceLocation!);
-
-      return process;
-    } catch (original) {
-      throw throwLaunch(original, this)
+        if (this.config.modloader) {
+            try {
+                switch (this.config.modloader.name) {
+                    case "forge":
+                    case "neoforge":
+                        await installForge(
+                            this.config as ModloaderConfig,
+                            this.versionManifest
+                        );
+                        break;
+                    default:
+                        throw new Error("Unknown modloader");
+                }
+            } catch (error) {
+                throw new InstallError("An error occured while installing the modloader", "modloader", this.config, { cause: error })
+            }
+        }
     }
-  }
+
+    async launch(): Promise<ChildProcessWithoutNullStreams> {
+        try {
+            if (!this.ready) await this.init()
+        } catch (error) {
+            throw new LaunchError("An error occured while initializing instance", "launch-init", this.config, { cause: error })
+        }
+
+        if (this.config.modloader) {
+            try {
+                switch (this.config.modloader.name) {
+                    case "forge": {
+                        const forgeVersionManifest = await readJson<Version>(
+                            path.join(
+                                this.config.paths.versions,
+                                `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}`,
+                                `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}.json`,
+                            ),
+                        );
+
+                        this.versionManifest = mergeManifests(
+                            this.versionManifest!,
+                            forgeVersionManifest,
+                        );
+                        break;
+                    }
+                    case "neoforge":
+                        {
+                            const neoForgeVersionManifest = await readJson<Version>(
+                                path.join(
+                                    this.config.paths.versions,
+                                    `${this.config.modloader.name}-${this.config.modloader.version}`,
+                                    `${this.config.modloader.name}-${this.config.modloader.version}.json`,
+                                ),
+                            );
+
+                            this.versionManifest = mergeManifests(
+                                this.versionManifest!,
+                                neoForgeVersionManifest,
+                            );
+                        }
+                        break;
+                    default:
+                        throw new Error("Unknown modloader");
+                }
+            } catch (error) {
+                throw new LaunchError("An error occured while preparing the modloader", "modloader", this.config, { cause: error })
+            }
+        }
+
+        let args;
+        try {
+            args = await argumentsGenerator.generateLaunchArguments(
+                this.versionManifest,
+                this.config
+            );
+
+        } catch (error) {
+            throw new LaunchError("An error occured while generating launch arguments", "arguments", this.config, { cause: error })
+        }
+
+        try {
+            const process = launch(args!, this.config.paths.instance);
+
+            return process;
+        } catch (error) {
+            throw new LaunchError("An error occured while launching minecraft", "launch-process", this.config, { cause: error })
+        }
+    }
 }
