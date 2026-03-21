@@ -229,7 +229,11 @@ export interface InstanceEvents {
     total: number,
     doneSize: number,
     totalSize: number,
-  ];
+  ],
+  log: [
+    step: string,
+    message: unknown
+  ]
 }
 
 export type ProcessArgs = {
@@ -241,3 +245,5 @@ export type ProcessRam = {
   max?: string,
   min?: string
 }
+
+export type logger = (step: string, message: unknown) => void

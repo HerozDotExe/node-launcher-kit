@@ -24,6 +24,9 @@ test("launch game", { timeout: 0, tags: ["full", "forge"] }, async () => {
   });
 
   instance.on("progress", console.log);
+  instance.on("log", (step, msg) => {
+    console.log(`[${step}] ${msg}`)
+  })
 
   await instance.install();
   const p = await instance.launch();

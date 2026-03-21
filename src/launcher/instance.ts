@@ -1,5 +1,5 @@
 import { EventEmitter } from "node:stream";
-import { Auth, InstanceEvents, Modloader, Paths, ProcessArgs, ProcessRam, Version } from "../utils/types";
+import { Auth, InstanceEvents, logger, Modloader, Paths, ProcessArgs, ProcessRam, Version } from "../utils/types";
 import path from "node:path";
 import { argumentsGenerator, AssetsDownloader, launch, LibrariesDownloader, NativesDownloader, version } from "../core";
 import { ConfigError, InstallError, LaunchError } from "../utils/errors";
@@ -25,13 +25,13 @@ export interface Config extends BaseConfig {
     ram: Required<ProcessRam>
 }
 
-export function defineConfig(...layers: Partial<BaseConfig>[]) {
+export function defineConfig(logger: logger, ...layers: Partial<BaseConfig>[]) {
     let config: Partial<BaseConfig> = {} as Partial<BaseConfig>;
     for (const layer of layers) {
         config = { ...config, ...layer }
     }
     if (!config.auth || !config.paths?.root || !config.paths?.instance || !config.version || !config.javaExecutable) {
-        throw new ConfigError("Invalid config provided", config)
+        throw new ConfigError("Invalid config provided", config, logger)
     }
 
     config.paths = {
@@ -54,16 +54,26 @@ export class Instance extends EventEmitter<InstanceEvents> {
     config: Config
     versionLocation: string
     versionManifest: Version
+    logger: logger
 
     constructor(...layers: Partial<BaseConfig>[]) {
         super()
-        this.config = defineConfig(...layers)
+        this.logger = (step: string, message: unknown) => {
+            this.emit("log", step, message)
+        }
+        this.config = defineConfig(this.logger, ...layers)
         this.ready = false
         this.versionManifest = {} as Version
         this.versionLocation = ""
     }
 
+    private async log(step: string, message: unknown) {
+        this.emit("log", step, message)
+    }
+
     private async init() {
+        this.log("init", "Initializing instance")
+
         this.versionLocation = path.join(this.config.paths.versions, this.config.version);
 
         if (this.config.modloader) {
@@ -87,7 +97,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
                 this.versionLocation,
             );
         } catch (error) {
-            throw new InstallError("An error occured while initializing instance", "install-init", this.config, { cause: error })
+            throw new InstallError("An error occured while initializing instance", "install-init", this.config, this.logger, { cause: error })
         }
 
         try {
@@ -109,7 +119,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
             await librariesDownloader.run();
         } catch (error) {
-            throw new InstallError("An error occured while downloading libraries", "libraries", this.config, { cause: error })
+            throw new InstallError("An error occured while downloading libraries", "libraries", this.config, this.logger, { cause: error })
         }
 
         try {
@@ -131,7 +141,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
             await assetsDownloader.run();
         } catch (error) {
-            throw new InstallError("An error occured while downloading assets", "assets", this.config, { cause: error })
+            throw new InstallError("An error occured while downloading assets", "assets", this.config, this.logger, { cause: error })
         }
 
         try {
@@ -151,12 +161,12 @@ export class Instance extends EventEmitter<InstanceEvents> {
             });
             await nativesDownloader.run();
         } catch (error) {
-            throw new InstallError("An error occured while downloadng natives", "natives", this.config, { cause: error })
+            throw new InstallError("An error occured while downloadng natives", "natives", this.config, this.logger, { cause: error })
         }
 
         const javaError = await checkJava(this.config.javaExecutable)
         if (javaError) {
-            throw new InstallError("Invalid java provieded", "java", this.config, { cause: javaError })
+            throw new InstallError("Invalid java provided", "java", this.config, this.logger, { cause: javaError })
         }
 
         if (this.config.modloader) {
@@ -166,14 +176,15 @@ export class Instance extends EventEmitter<InstanceEvents> {
                     case "neoforge":
                         await installForge(
                             this.config as ModloaderConfig,
-                            this.versionManifest
+                            this.versionManifest,
+                            this.logger
                         );
                         break;
                     default:
                         throw new Error("Unknown modloader");
                 }
             } catch (error) {
-                throw new InstallError("An error occured while installing the modloader", "modloader", this.config, { cause: error })
+                throw new InstallError("An error occured while installing the modloader", "modloader", this.config, this.logger, { cause: error })
             }
         }
     }
@@ -182,7 +193,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         try {
             if (!this.ready) await this.init()
         } catch (error) {
-            throw new LaunchError("An error occured while initializing instance", "launch-init", this.config, { cause: error })
+            throw new LaunchError("An error occured while initializing instance", "launch-init", this.config, this.logger, { cause: error })
         }
 
         if (this.config.modloader) {
@@ -223,7 +234,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
                         throw new Error("Unknown modloader");
                 }
             } catch (error) {
-                throw new LaunchError("An error occured while preparing the modloader", "modloader", this.config, { cause: error })
+                throw new LaunchError("An error occured while preparing the modloader", "modloader", this.config, this.logger, { cause: error })
             }
         }
 
@@ -235,15 +246,15 @@ export class Instance extends EventEmitter<InstanceEvents> {
             );
 
         } catch (error) {
-            throw new LaunchError("An error occured while generating launch arguments", "arguments", this.config, { cause: error })
+            throw new LaunchError("An error occured while generating launch arguments", "arguments", this.config, this.logger, { cause: error })
         }
 
         try {
-            const process = launch(args!, this.config.paths.instance);
+            const process = launch(args!, this.config.paths.instance, this.logger);
 
             return process;
         } catch (error) {
-            throw new LaunchError("An error occured while launching minecraft", "launch-process", this.config, { cause: error })
+            throw new LaunchError("An error occured while launching minecraft", "launch-process", this.config, this.logger, { cause: error })
         }
     }
 }

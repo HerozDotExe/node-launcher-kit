@@ -6,7 +6,6 @@ export function mergeManifests(base: Version, layer: Version) {
   const result = { ...base }
   result.libraries = [];
   result.mainClass = layer.mainClass;
-  console.log(base)
 
   // const librariesNames = base.libraries.map(
   //   (lib) => {

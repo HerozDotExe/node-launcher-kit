@@ -1,7 +1,7 @@
 import path from "path";
 import { downloadFile } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
-import { LauncherProfiles, Modloader, Version } from "../utils/types";
+import { LauncherProfiles, logger, Modloader, Version } from "../utils/types";
 import fs from "fs/promises";
 import { spawn } from "child_process";
 import { version as packageVersion } from "../../package.json";
@@ -68,9 +68,11 @@ export function runForgeInstaller(
   javaExecutable: string,
   forgeInstallerPath: string,
   fakeLauncher: string,
-  installType: "Client" | "Server"
+  installType: "Client" | "Server",
+  logger: logger
 ) {
-  console.log(
+  logger(
+    "forge",
     `[nlk ${packageVersion}] Running forge installer : "${javaExecutable} -jar ${forgeInstallerPath} --install${installType} ${path.join(fakeLauncher)}"`,
   );
   const forgeInstaller = spawn(javaExecutable, [
@@ -81,11 +83,11 @@ export function runForgeInstaller(
   ], { cwd: fakeLauncher });
 
   forgeInstaller.stdout.on("data", (data: Buffer) =>
-    console.log(data.toString()),
+    logger("forge", data.toString()),
   );
 
   forgeInstaller.stderr.on("data", (data: Buffer) =>
-    console.log(data.toString()),
+    logger("forge", data.toString()),
   );
 
   return new Promise<void>((res, rej) => {
@@ -118,7 +120,8 @@ export interface ModloaderConfig extends Config {
 
 export async function installForge(
   config: ModloaderConfig,
-  versionManifest: Version
+  versionManifest: Version,
+  logger: logger
 ) {
   const forgeLibDir = path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${config.modloader.version}`)
   const neoForgeLibDir = path.join(config.paths.root, "libraries", "net", "neoforged", "neoforge", `${config.modloader.version}`)
@@ -147,7 +150,7 @@ export async function installForge(
 
   const modernInstaller = isModernForge(versionManifest.id)
 
-  await runForgeInstaller(config.javaExecutable, forgeInstallerPath, fakeLauncher, modernInstaller ? "Client" : "Server");
+  await runForgeInstaller(config.javaExecutable, forgeInstallerPath, fakeLauncher, modernInstaller ? "Client" : "Server", logger);
 
   // Copy libraries and versions files
   for (const file of await fs.readdir(path.join(fakeLauncher, "libraries"))) {

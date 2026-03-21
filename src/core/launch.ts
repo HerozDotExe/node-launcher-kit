@@ -1,14 +1,15 @@
 import { version as packageVersion } from "../../package.json";
 import { spawn } from "child_process";
-import { LaunchArguments } from "../utils/types";
+import { LaunchArguments, logger } from "../utils/types";
 
 export function launch(
   launchArguments: LaunchArguments,
   gameRoot: string,
+  logger: logger,
   detached = false,
 ) {
-  console.log(`[nlk ${packageVersion}] Working directory : ${gameRoot}`);
-  console.log(
+  logger("launch", `[nlk ${packageVersion}] Working directory : ${gameRoot}`);
+  logger("launch",
     `[nlk ${packageVersion}] Launching command : ${launchArguments.command} ${launchArguments.args.join(" ")}`,
   );
 
