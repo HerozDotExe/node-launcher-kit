@@ -47,10 +47,12 @@ const tempFolder = import.meta.dirname
 if (await fExists(path.join(tempFolder, "vanilla"))) { await fs.rm(path.join(tempFolder, "vanilla"), { recursive: true }) }
 if (await fExists(path.join(tempFolder, "modloaders/forge"))) { await fs.rm(path.join(tempFolder, "modloaders/forge"), { recursive: true }) }
 if (await fExists(path.join(tempFolder, "modloaders/neoforge"))) { await fs.rm(path.join(tempFolder, "modloaders/neoforge"), { recursive: true }) }
+if (await fExists(path.join(tempFolder, "modloaders/fabric"))) { await fs.rm(path.join(tempFolder, "modloaders/fabric"), { recursive: true }) }
 
-await fs.mkdir(path.join(tempFolder, "vanilla"))
-await fs.mkdir(path.join(tempFolder, "modloaders/forge"))
-await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
+await fs.mkdir(path.join(tempFolder, "vanilla"), {recursive: true})
+await fs.mkdir(path.join(tempFolder, "modloaders/forge"), {recursive: true})
+await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"), {recursive: true})
+await fs.mkdir(path.join(tempFolder, "modloaders/fabric"), {recursive: true})
 
 // Forge
 {
@@ -67,10 +69,10 @@ await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
             if (!await fExists(path.join(tempFolder, `modloaders/forge/forge-${version}-${forgeVersion}.test.ts`))) {
                 let result = ""
                 if (java) {
-                    const template = await fs.readFile(path.join(tempFolder, "forge-java.test.ts.template"), { encoding: "utf-8" })
+                    const template = await fs.readFile(path.join(tempFolder, "modloader-java.test.ts.template"), { encoding: "utf-8" })
                     result = template.replaceAll("${version}", version).replaceAll("${modloader}", "forge").replaceAll("${modloader_version}", forgeVersion).replaceAll("${java}", await getJava(version))
                 } else {
-                    const template = await fs.readFile(path.join(tempFolder, "forge.test.ts.template"), { encoding: "utf-8" })
+                    const template = await fs.readFile(path.join(tempFolder, "modloader.test.ts.template"), { encoding: "utf-8" })
                     result = template.replaceAll("${version}", version).replaceAll("${modloader}", "forge").replaceAll("${modloader_version}", forgeVersion)
                 }
                 await fs.writeFile(path.join(tempFolder, `modloaders/forge/forge-${version}-${forgeVersion}.test.ts`), result)
@@ -99,14 +101,40 @@ await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"))
         if (!await fExists(path.join(tempFolder, `modloaders/neoforge/neoforge-${mcVersion}-${neoForgeVersion}.test.ts`))) {
             let result = ""
             if (java) {
-                const template = await fs.readFile(path.join(tempFolder, "forge-java.test.ts.template"), { encoding: "utf-8" })
+                const template = await fs.readFile(path.join(tempFolder, "modloader-java.test.ts.template"), { encoding: "utf-8" })
                 result = template.replaceAll("${version}", mcVersion).replaceAll("${modloader}", "neoforge").replaceAll("${modloader_version}", neoForgeVersion).replaceAll("${java}", await getJava(mcVersion))
             } else {
-                const template = await fs.readFile(path.join(tempFolder, "forge.test.ts.template"), { encoding: "utf-8" })
+                const template = await fs.readFile(path.join(tempFolder, "modloader.test.ts.template"), { encoding: "utf-8" })
                 result = template.replaceAll("${version}", mcVersion).replaceAll("${modloader}", "neoforge").replaceAll("${modloader_version}", neoForgeVersion)
             }
             await fs.writeFile(path.join(tempFolder, `modloaders/neoforge/neoforge-${mcVersion}-${neoForgeVersion}.test.ts`), result)
             console.log(`Done neoforge ${neoForgeVersion}`)
+        }
+    }
+}
+
+// Fabric
+{
+    let mcVersions = (await (await fetch("https://meta.fabricmc.net/v2/versions/game")).json()).filter(v => {
+        return importantVersions.includes(v.version)
+    }).map(v => v.version)
+
+    for (const mcVersion of mcVersions) {
+        const loaderVersions = (await (await fetch(`https://meta.fabricmc.net/v2/versions/loader/${mcVersion}`)).json())
+        const fabricVersion = loaderVersions.find(v => v.loader.stable)
+        if (fabricVersion) {
+            if (!await fExists(path.join(tempFolder, `modloaders/fabric/fabric-${mcVersion}-${fabricVersion.loader.version}.test.ts`))) {
+                let result = ""
+                if (java) {
+                    const template = await fs.readFile(path.join(tempFolder, "modloader-java.test.ts.template"), { encoding: "utf-8" })
+                    result = template.replaceAll("${version}", mcVersion).replaceAll("${modloader}", "fabric").replaceAll("${modloader_version}", fabricVersion.loader.version).replaceAll("${java}", await getJava(mcVersion))
+                } else {
+                    const template = await fs.readFile(path.join(tempFolder, "modloader.test.ts.template"), { encoding: "utf-8" })
+                    result = template.replaceAll("${version}", mcVersion).replaceAll("${modloader}", "fabric").replaceAll("${modloader_version}", fabricVersion.loader.version)
+                }
+                await fs.writeFile(path.join(tempFolder, `modloaders/fabric/fabric-${mcVersion}-${fabricVersion.loader.version}.test.ts`), result)
+                console.log(`Done fabric ${mcVersion}`)
+            }
         }
     }
 }
