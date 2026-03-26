@@ -8,8 +8,8 @@ export function launch(
   logger: logger,
   detached = false,
 ) {
-  logger("launch", `[nlk ${packageVersion}] Working directory : ${gameRoot}`);
-  logger("launch",
+  logger("launch-process", `[nlk ${packageVersion}] Working directory : ${gameRoot}`);
+  logger("launch-process",
     `[nlk ${packageVersion}] Launching command : ${launchArguments.command} ${launchArguments.args.join(" ")}`,
   );
 

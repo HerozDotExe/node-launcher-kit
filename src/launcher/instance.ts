@@ -99,6 +99,9 @@ export class Instance extends EventEmitter<InstanceEvents> {
             throw new InstallError("An error occured while initializing instance", "install-init", this.config, this.logger, { cause: error })
         }
 
+
+        this.log("libraries", "Downloading libraries")
+
         try {
             const librariesDownloader = await LibrariesDownloader(
                 this.config.paths.libraries,
@@ -120,6 +123,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
         } catch (error) {
             throw new InstallError("An error occured while downloading libraries", "libraries", this.config, this.logger, { cause: error })
         }
+
+        this.log("assets", "Downloading assets")
 
         try {
             const assetsDownloader = await AssetsDownloader(
@@ -143,6 +148,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
             throw new InstallError("An error occured while downloading assets", "assets", this.config, this.logger, { cause: error })
         }
 
+        this.log("natives", "Downloading natives")
+
         try {
             const nativesDownloader = await NativesDownloader(
                 path.join(this.config.paths.instance, "natives"),
@@ -160,8 +167,10 @@ export class Instance extends EventEmitter<InstanceEvents> {
             });
             await nativesDownloader.run();
         } catch (error) {
-            throw new InstallError("An error occured while downloadng natives", "natives", this.config, this.logger, { cause: error })
+            throw new InstallError("An error occured while downloading natives", "natives", this.config, this.logger, { cause: error })
         }
+
+        this.log("java", "Checking java")
 
         const javaError = await checkJava(this.config.javaExecutable)
         if (javaError) {
@@ -169,6 +178,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         }
 
         if (this.config.modloader) {
+            this.log("install-modloader", "Installing modloader")
             try {
                 switch (this.config.modloader.name) {
                     case "forge":
@@ -185,7 +195,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
                         throw new Error("Unknown modloader");
                 }
             } catch (error) {
-                throw new InstallError("An error occured while installing the modloader", "modloader", this.config, this.logger, { cause: error })
+                throw new InstallError("An error occured while installing the modloader", "install-modloader", this.config, this.logger, { cause: error })
             }
         }
     }
@@ -198,6 +208,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
         }
 
         if (this.config.modloader) {
+            this.log("launch-modloader", "Preparing modloader")
             try {
                 switch (this.config.modloader.name) {
                     case "forge":
@@ -209,9 +220,11 @@ export class Instance extends EventEmitter<InstanceEvents> {
                         throw new Error("Unknown modloader");
                 }
             } catch (error) {
-                throw new LaunchError("An error occured while preparing the modloader", "modloader", this.config, this.logger, { cause: error })
+                throw new LaunchError("An error occured while preparing the modloader", "launch-modloader", this.config, this.logger, { cause: error })
             }
         }
+
+        this.log("arguments", "Preparing launch arguments")
 
         let args;
         try {
@@ -224,6 +237,8 @@ export class Instance extends EventEmitter<InstanceEvents> {
             throw new LaunchError("An error occured while generating launch arguments", "arguments", this.config, this.logger, { cause: error })
         }
 
+
+        this.log("launch-process", "Preparing launch arguments")
         try {
             const process = launch(args!, this.config.paths.instance, this.logger);
 
