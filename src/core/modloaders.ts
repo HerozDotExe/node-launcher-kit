@@ -24,6 +24,10 @@ export interface ModloaderConfig extends Config {
   modloader: Modloader
 }
 
+export function getVersionId(config: ModloaderConfig) {
+  return `${config.version}-${config.modloader.name}-${config.modloader.version}`
+}
+
 async function downloadJar(
   config: ModloaderConfig,
   type: "universal" | "installer",
@@ -81,7 +85,6 @@ async function downloadJar(
     throw new InstallError("An error occured while downloadng natives", "natives", config, logger, { cause: error })
   }
 
-  console.log(filePath)
   return filePath;
 }
 
@@ -190,6 +193,9 @@ export async function installForge(
     );
   }
 
+  const versionId = getVersionId(config)
+  console.log(versionId)
+
   if (isModernForge(config.version)) {
     // Modern forge (version >= 1.12.2)
     const fakeLauncherProfiles = await readJson<LauncherProfiles>(
@@ -201,9 +207,10 @@ export async function installForge(
 
     await fs.cp(
       path.join(fakeLauncher, "versions", originalVersionId),
-      path.join(config.paths.versions, originalVersionId),
+      path.join(config.paths.versions, versionId),
       { recursive: true },
     );
+    if (config.modloader.name === "neoforge") await fs.rename(path.join(config.paths.versions, versionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))
   } else {
     // Older versions (from 1.5.2 to 1.12.2, even older versions are not supported)
     const universalPath = path.join(fakeLauncher, `forge-${config.version}-${config.modloader.version}-universal.jar`)
@@ -218,8 +225,8 @@ export async function installForge(
 
     // Copy version json
     const zip = new AdmZip(universalPath)
-    zip.extractEntryTo("version.json", path.join(config.paths.versions, `${config.version}-forge-${config.modloader.version}`))
-    await fs.rename(path.join(config.paths.versions, `${config.version}-forge-${config.modloader.version}`, "version.json"), path.join(config.paths.versions, `${config.version}-forge-${config.modloader.version}`, `${config.version}-forge-${config.modloader.version}.json`))
+    zip.extractEntryTo("version.json", path.join(config.paths.versions, versionId))
+    await fs.cp(path.join(config.paths.versions, versionId, "version.json"), path.join(config.paths.versions, versionId, `${versionId}.json`))
   }
 }
 
@@ -303,7 +310,7 @@ export async function installFabric(config: ModloaderConfig, logger: logger) {
     fakeLauncherProfiles.profiles[Object.keys(fakeLauncherProfiles.profiles)[0]]
       .lastVersionId;
 
-  const versionId = `${config.version}-fabric-${config.modloader.version}`
+  const versionId = getVersionId(config)
   await ensureDir(path.join(config.paths.versions, versionId))
   console.log(path.join(config.paths.versions, originalVersionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))
   await fs.cp(path.join(fakeLauncher, "versions", originalVersionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))

@@ -6,8 +6,7 @@ import { ConfigError, InstallError, LaunchError } from "../utils/errors";
 import { checkJava } from "./java";
 import { fixVersionWithDoubleName, installFabric, installForge, ModloaderConfig } from "../core/modloaders";
 import { ChildProcessWithoutNullStreams } from "node:child_process";
-import { readJson } from "../utils/fs";
-import { mergeManifests } from "../core/mergeManifests";
+import { prepareManifest } from "../core/mergeManifests";
 
 export interface BaseConfig {
     version: string;
@@ -201,53 +200,11 @@ export class Instance extends EventEmitter<InstanceEvents> {
         if (this.config.modloader) {
             try {
                 switch (this.config.modloader.name) {
-                    case "forge": {
-                        const forgeVersionManifest = await readJson<Version>(
-                            path.join(
-                                this.config.paths.versions,
-                                `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}`,
-                                `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}.json`,
-                            ),
-                        );
-
-                        this.versionManifest = mergeManifests(
-                            this.versionManifest!,
-                            forgeVersionManifest,
-                        );
-                        break;
-                    }
+                    case "forge":
                     case "neoforge":
-                        {
-                            const neoForgeVersionManifest = await readJson<Version>(
-                                path.join(
-                                    this.config.paths.versions,
-                                    `${this.config.modloader.name}-${this.config.modloader.version}`,
-                                    `${this.config.modloader.name}-${this.config.modloader.version}.json`,
-                                ),
-                            );
-
-                            this.versionManifest = mergeManifests(
-                                this.versionManifest!,
-                                neoForgeVersionManifest,
-                            );
-                        }
-                        break;
                     case "fabric":
-                        {
-                            const fabricVersionManifest = await readJson<Version>(
-                                path.join(
-                                    this.config.paths.versions,
-                                    `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}`,
-                                    `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}.json`,
-                                ),
-                            );
-
-                            this.versionManifest = mergeManifests(
-                                this.versionManifest!,
-                                fabricVersionManifest,
-                            );
-                            break;
-                        }
+                        this.versionManifest = await prepareManifest(this.config as ModloaderConfig, this.versionManifest)
+                        break
                     default:
                         throw new Error("Unknown modloader");
                 }

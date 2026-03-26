@@ -1,6 +1,9 @@
+import path from "path";
+import { readJson } from "../utils/fs";
 import { Version } from "../utils/types";
+import { getVersionId, ModloaderConfig } from "./modloaders";
 
-export function mergeManifests(base: Version, layer: Version) {
+function mergeManifests(base: Version, layer: Version) {
   // Copy needed properties to base
   // Those properties should be enough for forge at least
   const result = { ...base }
@@ -60,4 +63,22 @@ export function mergeManifests(base: Version, layer: Version) {
   }
 
   return result;
+}
+
+export async function prepareManifest(config: ModloaderConfig, versionManifest: Version) {
+  const versionId = getVersionId(config)
+  const moddedVersionManifest = await readJson<Version>(
+    path.join(
+      config.paths.versions,
+      versionId,
+      `${versionId}.json`,
+    ),
+  );
+
+  versionManifest = mergeManifests(
+    versionManifest!,
+    moddedVersionManifest,
+  );
+
+  return versionManifest
 }
