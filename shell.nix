@@ -46,4 +46,7 @@ pkgs.mkShell {
       flite # Text to speech (Otherwise minecraft will log an error every time it launches)
     ]
   );
+
+  j8 = pkgs.jre8 + "/bin/java";
+  j21 = pkgs.jdk21 + "/bin/java";
 }
