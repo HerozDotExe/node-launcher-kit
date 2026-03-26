@@ -200,7 +200,7 @@ export type LaunchErrorConfig = {
   modloader: Modloader;
 };
 
-export type SupportedModloaders = "forge" | "neoforge";
+export type SupportedModloaders = "forge" | "neoforge" | "fabric";
 
 export type Modloader = { name: SupportedModloaders; version: string };
 
@@ -247,3 +247,10 @@ export type ProcessRam = {
 }
 
 export type logger = (step: string, message: unknown) => void
+
+export type FabricInstallerMeta = {
+  url: string,
+  maven: string,
+  version: string,
+  stable: boolean
+}[]

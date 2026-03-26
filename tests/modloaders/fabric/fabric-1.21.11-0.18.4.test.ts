@@ -7,19 +7,19 @@ const gameRoot = path.join(import.meta.dirname, "..", "..", "temp");
 // await fs.rm(gameRoot, { recursive: true, force: true });
 // await fs.mkdir(gameRoot, { recursive: true });
 
-test("launch game", { timeout: 0, tags: ["full", "vanilla"] }, async () => {
+test("launch game", { timeout: 0, tags: ["full", "forge"] }, async () => {
   const javaManager = new RuntimeManager(path.join(gameRoot, "java"));
   javaManager.on("progress", console.log)
-  const java = await javaManager.use(await getJavaComponent("${version}"))
+  // const java = await javaManager.use(await getJavaComponent("1.21.11"))
 
   const instance = new Instance({
-    version: "${version}",
+    version: "1.21.11",
     auth: offlineAuth("player"),
-    paths: { root: gameRoot, instance: path.join(gameRoot, "instances", "${version}") },
-    javaExecutable: java,
+    paths: { root: gameRoot, instance: path.join(gameRoot, "instances", "fabric-1.21.11-0.18.4") },
+    javaExecutable: "/nix/store/rhw336hj0iwv7s3rmcqj5zqpsrw6z1z2-openjdk-21.0.9+10/bin/java",
     modloader: {
-      name: "${modloader}",
-      version: "${modloader_version}"
+      name: "fabric",
+      version: "0.18.4"
     }
   });
 

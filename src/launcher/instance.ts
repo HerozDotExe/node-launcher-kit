@@ -4,7 +4,7 @@ import path from "node:path";
 import { argumentsGenerator, AssetsDownloader, launch, LibrariesDownloader, NativesDownloader, version } from "../core";
 import { ConfigError, InstallError, LaunchError } from "../utils/errors";
 import { checkJava } from "./java";
-import { fixVersionWithDoubleName, installForge, ModloaderConfig } from "../core/modloaders";
+import { fixVersionWithDoubleName, installFabric, installForge, ModloaderConfig } from "../core/modloaders";
 import { ChildProcessWithoutNullStreams } from "node:child_process";
 import { readJson } from "../utils/fs";
 import { mergeManifests } from "../core/mergeManifests";
@@ -76,7 +76,7 @@ export class Instance extends EventEmitter<InstanceEvents> {
 
         this.versionLocation = path.join(this.config.paths.versions, this.config.version);
 
-        if (this.config.modloader) {
+        if (this.config.modloader?.name === "forge") {
             this.config.modloader.version = fixVersionWithDoubleName(this.config.version, this.config.modloader)
         }
 
@@ -176,9 +176,11 @@ export class Instance extends EventEmitter<InstanceEvents> {
                     case "neoforge":
                         await installForge(
                             this.config as ModloaderConfig,
-                            this.versionManifest,
                             this.logger
                         );
+                        break;
+                    case "fabric":
+                        await installFabric(this.config as ModloaderConfig, this.logger)
                         break;
                     default:
                         throw new Error("Unknown modloader");
@@ -230,6 +232,22 @@ export class Instance extends EventEmitter<InstanceEvents> {
                             );
                         }
                         break;
+                    case "fabric":
+                        {
+                            const fabricVersionManifest = await readJson<Version>(
+                                path.join(
+                                    this.config.paths.versions,
+                                    `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}`,
+                                    `${this.config.version}-${this.config.modloader.name}-${this.config.modloader.version}.json`,
+                                ),
+                            );
+
+                            this.versionManifest = mergeManifests(
+                                this.versionManifest!,
+                                fabricVersionManifest,
+                            );
+                            break;
+                        }
                     default:
                         throw new Error("Unknown modloader");
                 }

@@ -1,7 +1,7 @@
 import path from "path";
-import { downloadFile } from "../utils/fetch";
+import { downloadFile, fetchJson } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
-import { LauncherProfiles, logger, Modloader, Version } from "../utils/types";
+import { LauncherProfiles, logger, Modloader, FabricInstallerMeta } from "../utils/types";
 import fs from "fs/promises";
 import { spawn } from "child_process";
 import { version as packageVersion } from "../../package.json";
@@ -20,10 +20,15 @@ export function fixVersionWithDoubleName(version: string, modloader: Modloader) 
   return modLoaderVersion
 }
 
+export interface ModloaderConfig extends Config {
+  modloader: Modloader
+}
+
 async function downloadJar(
   config: ModloaderConfig,
   type: "universal" | "installer",
   destination: string,
+  logger: logger
 ) {
   let filePath = "";
   try {
@@ -56,12 +61,38 @@ async function downloadJar(
         url: `https://maven.neoforged.net/releases/net/neoforged/neoforge/${config.modloader.version}/neoforge-${config.modloader.version}-installer.jar`,
         path: filePath,
       });
+    } else if (config.modloader.name === "fabric") {
+      const fabricInstaller = (await fetchJson<FabricInstallerMeta>("https://meta.fabricmc.net/v2/versions/installer")).find(i => i.stable)
+      if (!fabricInstaller) {
+        throw new Error("Couldn't download fabric installer")
+      }
+
+      filePath = path.join(
+        destination,
+        `fabric-installer-${fabricInstaller.version}.jar`,
+      );
+
+      await downloadFile({
+        url: fabricInstaller.url,
+        path: filePath,
+      });
     }
   } catch (error) {
-    throw new InstallError("An error occured while downloadng natives", "natives", config, { cause: error })
+    throw new InstallError("An error occured while downloadng natives", "natives", config, logger, { cause: error })
   }
 
+  console.log(filePath)
   return filePath;
+}
+
+async function setupFakeLauncher() {
+  const tempFolder = await getTempFolder("modloaders");
+  const fakeLauncher = path.join(tempFolder, "fakeLauncher");
+
+  await fs.mkdir(path.join(fakeLauncher, "versions"), { recursive: true })
+  await fs.writeFile(path.join(fakeLauncher, "launcher_profiles.json"), `{"profiles":{}}`);
+
+  return tempFolder
 }
 
 export function runForgeInstaller(
@@ -71,16 +102,18 @@ export function runForgeInstaller(
   installType: "Client" | "Server",
   logger: logger
 ) {
-  logger(
-    "forge",
-    `[nlk ${packageVersion}] Running forge installer : "${javaExecutable} -jar ${forgeInstallerPath} --install${installType} ${path.join(fakeLauncher)}"`,
-  );
-  const forgeInstaller = spawn(javaExecutable, [
+  const forgeInstallerArgs = [
     "-jar",
     forgeInstallerPath,
     `--install${installType}`,
     path.join(fakeLauncher),
-  ], { cwd: fakeLauncher });
+  ]
+
+  logger(
+    "forge",
+    `[nlk ${packageVersion}] Running forge installer : "${javaExecutable} ${forgeInstallerArgs.join(" ")}"`,
+  );
+  const forgeInstaller = spawn(javaExecutable, forgeInstallerArgs, { cwd: fakeLauncher });
 
   forgeInstaller.stdout.on("data", (data: Buffer) =>
     logger("forge", data.toString()),
@@ -114,41 +147,35 @@ function isModernForge(version: string) {
   } else return false
 }
 
-export interface ModloaderConfig extends Config {
-  modloader: Modloader
-}
-
 export async function installForge(
   config: ModloaderConfig,
-  versionManifest: Version,
   logger: logger
 ) {
-  const forgeLibDir = path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${config.modloader.version}`)
+  const forgeLibDir = path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${config.version}-${config.modloader.version}`)
   const neoForgeLibDir = path.join(config.paths.root, "libraries", "net", "neoforged", "neoforge", `${config.modloader.version}`)
 
   // older forge jar path
-  const universalDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${config.modloader.version}.jar`)
+  const universalDestination = path.join(forgeLibDir, `forge-${config.version}-${config.modloader.version}.jar`)
   // newer forge jar path
-  const forgeClientDestination = path.join(forgeLibDir, `forge-${versionManifest.id}-${config.modloader.version}-client.jar`)
+  const forgeClientDestination = path.join(forgeLibDir, `forge-${config.version}-${config.modloader.version}-client.jar`)
   // neoforge jar path
   const neoForgeClientDestination = path.join(neoForgeLibDir, `neoforge-${config.modloader.version}-client.jar`)
 
   if (await exists(universalDestination) || await exists(forgeClientDestination) || await exists(neoForgeClientDestination)) return;
 
-  const tempFolder = await getTempFolder("forge");
+  const tempFolder = await setupFakeLauncher();
+
   // Download and extract installer file
   const forgeInstallerPath = await downloadJar(
     config,
     "installer",
     tempFolder,
+    logger
   );
 
   const fakeLauncher = path.join(tempFolder, "fakeLauncher");
 
-  await fs.mkdir(fakeLauncher);
-  await fs.writeFile(path.join(fakeLauncher, "launcher_profiles.json"), `{"profiles":{}}`);
-
-  const modernInstaller = isModernForge(versionManifest.id)
+  const modernInstaller = isModernForge(config.version)
 
   await runForgeInstaller(config.javaExecutable, forgeInstallerPath, fakeLauncher, modernInstaller ? "Client" : "Server", logger);
 
@@ -163,7 +190,7 @@ export async function installForge(
     );
   }
 
-  if (isModernForge(versionManifest.id)) {
+  if (isModernForge(config.version)) {
     // Modern forge (version >= 1.12.2)
     const fakeLauncherProfiles = await readJson<LauncherProfiles>(
       path.join(fakeLauncher, "launcher_profiles.json"),
@@ -179,10 +206,10 @@ export async function installForge(
     );
   } else {
     // Older versions (from 1.5.2 to 1.12.2, even older versions are not supported)
-    const universalPath = path.join(fakeLauncher, `forge-${versionManifest.id}-${config.modloader.version}-universal.jar`)
+    const universalPath = path.join(fakeLauncher, `forge-${config.version}-${config.modloader.version}-universal.jar`)
 
     // Copy forge jar
-    await ensureDir(path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${versionManifest.id}-${config.modloader.version}`), true)
+    await ensureDir(path.join(config.paths.root, "libraries", "net", "minecraftforge", "forge", `${config.version}-${config.modloader.version}`), true)
     await fs.cp(
       universalPath,
       universalDestination,
@@ -191,7 +218,93 @@ export async function installForge(
 
     // Copy version json
     const zip = new AdmZip(universalPath)
-    zip.extractEntryTo("version.json", path.join(config.paths.versions, `${versionManifest.id}-forge-${config.modloader.version}`))
-    await fs.rename(path.join(config.paths.versions, `${versionManifest.id}-forge-${config.modloader.version}`, "version.json"), path.join(config.paths.versions, `${versionManifest.id}-forge-${config.modloader.version}`, `${versionManifest.id}-forge-${config.modloader.version}.json`))
+    zip.extractEntryTo("version.json", path.join(config.paths.versions, `${config.version}-forge-${config.modloader.version}`))
+    await fs.rename(path.join(config.paths.versions, `${config.version}-forge-${config.modloader.version}`, "version.json"), path.join(config.paths.versions, `${config.version}-forge-${config.modloader.version}`, `${config.version}-forge-${config.modloader.version}.json`))
   }
+}
+
+export function runFabricInstaller(
+  config: ModloaderConfig,
+  fabricInstallerPath: string,
+  fakeLauncher: string,
+  logger: logger) {
+
+  const fabricInstallerArgs = [
+    "-jar",
+    fabricInstallerPath,
+    "client",
+    "-dir",
+    path.join(fakeLauncher),
+    "-mcversion",
+    config.version,
+    "-loader",
+    config.modloader.version
+  ]
+
+  logger(
+    "fabric",
+    `[nlk ${packageVersion}] Running fabric installer : "${config.javaExecutable} ${fabricInstallerArgs.join(" ")}"`,
+  );
+
+  const fabricInstaller = spawn(config.javaExecutable, fabricInstallerArgs, { cwd: fakeLauncher });
+
+  fabricInstaller.stdout.on("data", (data: Buffer) =>
+    logger("fabric", data.toString()),
+  );
+
+  fabricInstaller.stderr.on("data", (data: Buffer) =>
+    logger("fabric", data.toString()),
+  );
+
+  return new Promise<void>((res, rej) => {
+    fabricInstaller.on("error", (err) => {
+      rej(err);
+    });
+    fabricInstaller.on("close", () => {
+      res();
+    });
+  });
+}
+
+export async function installFabric(config: ModloaderConfig, logger: logger) {
+  /*
+    Forced to reinstall fabric even if the same version is already installed
+    as we at least need version json (and maybe libraries too).
+    Note: fabric seems to make each of its update available to every minecraft version.
+  */
+  const tempFolder = await setupFakeLauncher()
+  const fakeLauncher = path.join(tempFolder, "fakeLauncher")
+
+  // Download installer file
+  const fabricInstallerPath = await downloadJar(
+    config,
+    "installer",
+    tempFolder,
+    logger
+  );
+
+  await runFabricInstaller(config, fabricInstallerPath, fakeLauncher, logger)
+
+  // Copy libraries and versions files
+  for (const file of await fs.readdir(path.join(fakeLauncher, "libraries"))) {
+    await fs.cp(
+      path.join(fakeLauncher, "libraries", file),
+      path.join(config.paths.libraries, file),
+      {
+        recursive: true,
+      },
+    );
+  }
+
+  const fakeLauncherProfiles = await readJson<LauncherProfiles>(
+    path.join(fakeLauncher, "launcher_profiles.json"),
+  );
+  const originalVersionId =
+    fakeLauncherProfiles.profiles[Object.keys(fakeLauncherProfiles.profiles)[0]]
+      .lastVersionId;
+
+  const versionId = `${config.version}-fabric-${config.modloader.version}`
+  await ensureDir(path.join(config.paths.versions, versionId))
+  console.log(path.join(config.paths.versions, originalVersionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))
+  await fs.cp(path.join(fakeLauncher, "versions", originalVersionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))
 }

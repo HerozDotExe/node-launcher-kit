@@ -1,0 +1,52 @@
+import { test } from "vitest";
+import { Instance, offlineAuth, RuntimeManager, getJavaComponent } from "../../../dist/index.js";
+import path from "path";
+import fs from "fs/promises";
+
+const gameRoot = path.join(import.meta.dirname, "..", "..", "temp");
+// await fs.rm(gameRoot, { recursive: true, force: true });
+// await fs.mkdir(gameRoot, { recursive: true });
+
+test("launch game", { timeout: 0, tags: ["full", "forge"] }, async () => {
+  const javaManager = new RuntimeManager(path.join(gameRoot, "java"));
+  javaManager.on("progress", console.log)
+  // const java = await javaManager.use(await getJavaComponent("1.18.2"))
+
+  const instance = new Instance({
+    version: "1.18.2",
+    auth: offlineAuth("player"),
+    paths: { root: gameRoot, instance: path.join(gameRoot, "instances", "fabric-1.18.2-0.18.4") },
+    javaExecutable: "/nix/store/rhw336hj0iwv7s3rmcqj5zqpsrw6z1z2-openjdk-21.0.9+10/bin/java",
+    modloader: {
+      name: "fabric",
+      version: "0.18.4"
+    }
+  });
+
+  instance.on("progress", console.log);
+  instance.on("log", (step, msg) => {
+    console.log(`[${step}] ${msg}`)
+  })
+
+  await instance.install();
+  const p = await instance.launch();
+
+  p.stdout.on("data", (d: Buffer) => {
+    console.log(d.toString());
+  });
+
+  p.stderr.on("data", (d: Buffer) => {
+    console.log(d.toString());
+  });
+
+  await new Promise<void>((res) => {
+    p.on("error", (d: Buffer) => {
+      console.log(d.toString());
+      res();
+    });
+    p.on("close", () => {
+      console.log("closed");
+      res();
+    });
+  });
+});
