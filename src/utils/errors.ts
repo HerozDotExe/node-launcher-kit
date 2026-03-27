@@ -5,7 +5,7 @@ export class ConfigError extends Error {
   constructor(message: string, config: Partial<BaseConfig>, logger: logger, options?: ErrorOptions) {
     super(message, options)
     logger("error", "Provided config was:")
-    console.log("error", config)
+    console.log(config)
   }
 }
 
