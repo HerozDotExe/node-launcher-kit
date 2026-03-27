@@ -16,7 +16,7 @@ export async function unzipAll(from: string, to: string, filters: string[], mode
     }
     if (shouldSkip) continue;
     if (!await exists(path.join(to, entry.entryName)) || mode === "overwrite") {
-      zip.extractEntryTo(entry.entryName, to);
+      zip.extractEntryTo(entry.entryName, to, true, mode === "overwrite");
     }
   }
 }

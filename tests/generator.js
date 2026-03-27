@@ -3,7 +3,11 @@ import path from "path"
 import { Browser, BrowserWindow } from 'happy-dom';
 import PQueue from 'p-queue';
 
+// Use "java" tests if you don't want tests to download java by themselves, you will need to provide binaries path :
+// pnpm run test /path/to/java8/bin/java /path/to/java21/bin/java
+
 const importantVersions = ["1.7.10", "1.12.2", "1.16.5", "1.18.2", "1.20.1", "1.21.1", "1.21.11"]
+const modpacksUrls = ["https://cdn.modrinth.com/data/1KVo5zza/versions/FbnAVst2/Fabulously.Optimized-v12.0.7.mrpack", "https://cdn.modrinth.com/data/4BV47HRn/versions/krFPoaLH/Better%20MC%20%5BFORGE%5D%20BMC4%20v43.mrpack"]
 
 const java8 = process.argv[2]
 const java21 = process.argv[3]
@@ -45,14 +49,16 @@ async function fExists(path) {
 const tempFolder = import.meta.dirname
 
 if (await fExists(path.join(tempFolder, "vanilla"))) { await fs.rm(path.join(tempFolder, "vanilla"), { recursive: true }) }
+if (await fExists(path.join(tempFolder, "modrinth"))) { await fs.rm(path.join(tempFolder, "modrinth"), { recursive: true }) }
 if (await fExists(path.join(tempFolder, "modloaders/forge"))) { await fs.rm(path.join(tempFolder, "modloaders/forge"), { recursive: true }) }
 if (await fExists(path.join(tempFolder, "modloaders/neoforge"))) { await fs.rm(path.join(tempFolder, "modloaders/neoforge"), { recursive: true }) }
 if (await fExists(path.join(tempFolder, "modloaders/fabric"))) { await fs.rm(path.join(tempFolder, "modloaders/fabric"), { recursive: true }) }
 
-await fs.mkdir(path.join(tempFolder, "vanilla"), {recursive: true})
-await fs.mkdir(path.join(tempFolder, "modloaders/forge"), {recursive: true})
-await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"), {recursive: true})
-await fs.mkdir(path.join(tempFolder, "modloaders/fabric"), {recursive: true})
+await fs.mkdir(path.join(tempFolder, "vanilla"), { recursive: true })
+await fs.mkdir(path.join(tempFolder, "modrinth"), { recursive: true })
+await fs.mkdir(path.join(tempFolder, "modloaders/forge"), { recursive: true })
+await fs.mkdir(path.join(tempFolder, "modloaders/neoforge"), { recursive: true })
+await fs.mkdir(path.join(tempFolder, "modloaders/fabric"), { recursive: true })
 
 // Forge
 {
@@ -89,7 +95,7 @@ await fs.mkdir(path.join(tempFolder, "modloaders/fabric"), {recursive: true})
         const parsedVersion = v.split(".")
         const start = `1.${parsedVersion[0]}.${parsedVersion[1]}`
         return start
-    })).map(arr => arr[arr.length-1])
+    })).map(arr => arr[arr.length - 1])
 
     for (const neoForgeVersion of versions) {
         const parsedVersion = neoForgeVersion.split(".")
@@ -155,4 +161,23 @@ await fs.mkdir(path.join(tempFolder, "modloaders/fabric"), {recursive: true})
             console.log(`Done vanilla ${v.id}`)
         }
     });
+}
+
+// Modrinth modpacks
+{
+    modpacksUrls.forEach(async (url) => {
+        const modpackId = url.split("/").pop().replace(".mrpack", "")
+        let result = ""
+        if (java) {
+            const template = await fs.readFile(path.join(tempFolder, "modrinth-java.test.ts.template"), { encoding: "utf-8" })
+            // TODO: use java version based on modpack's minecraft version
+            result = template.replaceAll("${modpack_url}", url).replaceAll("${modpack_id}", modpackId).replaceAll("${java}", java21)
+        } else {
+            const template = await fs.readFile(path.join(tempFolder, "modrinth.test.ts.template"), { encoding: "utf-8" })
+            // Same but inside tests
+            result = template.replaceAll("${modpack_url}", url).replaceAll("${modpack_id}", modpackId)
+        }
+        await fs.writeFile(path.join(tempFolder, `modrinth/modrinth-${modpackId}.test.ts`), result)
+        console.log(`Done modrinth ${modpackId}`)
+    })
 }

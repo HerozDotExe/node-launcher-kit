@@ -1,28 +1,14 @@
 import { EventEmitter } from "node:stream";
-import { Auth, InstanceEvents, logger, Modloader, Paths, ProcessArgs, ProcessRam, Version } from "../utils/types";
+import { BaseConfig, Config, InstanceEvents, logger, PoolFile, Version, ModloaderConfig } from "../utils/types";
 import path from "node:path";
+import fs from "fs/promises"
 import { argumentsGenerator, AssetsDownloader, launch, LibrariesDownloader, NativesDownloader, version } from "../core";
 import { ConfigError, InstallError, LaunchError } from "../utils/errors";
 import { checkJava } from "./java";
-import { fixVersionWithDoubleName, installFabric, installForge, ModloaderConfig } from "../core/modloaders";
+import { fixVersionWithDoubleName, installFabric, installForge } from "../core/modloaders";
 import { ChildProcessWithoutNullStreams } from "node:child_process";
 import { prepareManifest } from "../core/mergeManifests";
-
-export interface BaseConfig {
-    version: string;
-    auth: Auth;
-    paths: Paths
-    javaExecutable: string
-    modloader?: Modloader;
-    args?: ProcessArgs;
-    ram?: { max?: string; min?: string }
-}
-
-export interface Config extends BaseConfig {
-    paths: Required<Paths>
-    args: Required<ProcessArgs>
-    ram: Required<ProcessRam>
-}
+import { DownloadPool } from "../utils/fetch";
 
 export function defineConfig(logger: logger, ...layers: Partial<BaseConfig>[]) {
     let config: Partial<BaseConfig> = {} as Partial<BaseConfig>;
@@ -44,6 +30,10 @@ export function defineConfig(logger: logger, ...layers: Partial<BaseConfig>[]) {
     config.args = { java: config.args?.java ?? "", game: config.args?.game ?? "" };
 
     config.ram = { max: config.ram?.max ?? "2G", min: config.ram?.min ?? "2G" };
+
+    if (!config.files) {
+        config.files = []
+    }
 
     return config as Config
 }
@@ -196,6 +186,38 @@ export class Instance extends EventEmitter<InstanceEvents> {
                 }
             } catch (error) {
                 throw new InstallError("An error occured while installing the modloader", "install-modloader", this.config, this.logger, { cause: error })
+            }
+        }
+
+        if (this.config.files.length > 0) {
+            this.log("install-modpack", "Downloading modpack's files")
+            try {
+                const files = this.config.files.map<PoolFile>(f => {
+                    return { url: f.url, path: path.join(this.config.paths.instance, f.path), size: f.size }
+                })
+                const pool = new DownloadPool(files, { pQueueOptions: { concurrency: 5 }, overwrite: false })
+                pool.on("completed", () => {
+                    this.emit(
+                        "progress",
+                        "modpack-files",
+                        pool.done,
+                        pool.total,
+                        pool.doneSize,
+                        pool.totalSize,
+                    );
+                });
+                await pool.run();
+            } catch (error) {
+                throw new InstallError("An error occured while downloading modpack's files", "install-modpack", this.config, this.logger, { cause: error })
+            }
+        }
+
+        if (this.config.overridesPath) {
+            this.log("install-modpack", "Copying modpack's overrides")
+            try {
+                await fs.cp(this.config.overridesPath, this.config.paths.instance, {recursive: true})
+            } catch (error) {
+                throw new InstallError("An error occured while copying modpack's overrides", "install-modpack", this.config, this.logger, { cause: error })
             }
         }
     }

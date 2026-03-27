@@ -253,4 +253,49 @@ export type FabricInstallerMeta = {
   maven: string,
   version: string,
   stable: boolean
-}[]
+}
+
+export type ModrinthManifestFile = {
+  path: string,
+  hashes : {sha1: string, sha512: string},
+  env: {client: string, server: string},
+  downloads: string[],
+  fileSize: number
+}
+
+export type ModrinthManifest = {
+  formatVersion: number,
+  game: string,
+  versionId: string,
+  name: string,
+  files: ModrinthManifestFile[],
+  dependencies: {
+    minecraft: string,
+    "fabric-loader": string
+    forge: string,
+    neoforge: string
+  }
+}
+
+export interface BaseConfig {
+    version: string;
+    auth: Auth;
+    paths: Paths
+    javaExecutable: string
+    modloader?: Modloader;
+    args?: ProcessArgs;
+    ram?: { max?: string; min?: string },
+    files?: PoolFile[],
+    overridesPath?: string
+}
+
+export interface Config extends BaseConfig {
+    paths: Required<Paths>
+    args: Required<ProcessArgs>
+    ram: Required<ProcessRam>
+    files: PoolFile[]
+}
+
+export interface ModloaderConfig extends Config {
+  modloader: Modloader
+}

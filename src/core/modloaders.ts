@@ -1,14 +1,13 @@
 import path from "path";
 import { downloadFile, fetchJson } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
-import { LauncherProfiles, logger, Modloader, FabricInstallerMeta } from "../utils/types";
+import { LauncherProfiles, logger, Modloader, FabricInstallerMeta, ModloaderConfig } from "../utils/types";
 import fs from "fs/promises";
 import { spawn } from "child_process";
 import { version as packageVersion } from "../../package.json";
 import { ensureDir, exists, readJson } from "../utils/fs";
 import { InstallError } from "../utils/errors";
 import AdmZip from "adm-zip";
-import { Config } from "../launcher/instance";
 
 const versionWithDoubleName = ["1.9.4", "1.9.0", "1.8.9", "1.8.8", "1.8", "1.7.10"]
 export function fixVersionWithDoubleName(version: string, modloader: Modloader) {
@@ -18,10 +17,6 @@ export function fixVersionWithDoubleName(version: string, modloader: Modloader) 
     modLoaderVersion = modloader.version + `-${version}`
   }
   return modLoaderVersion
-}
-
-export interface ModloaderConfig extends Config {
-  modloader: Modloader
 }
 
 export function getVersionId(config: ModloaderConfig) {
@@ -66,7 +61,7 @@ async function downloadJar(
         path: filePath,
       });
     } else if (config.modloader.name === "fabric") {
-      const fabricInstaller = (await fetchJson<FabricInstallerMeta>("https://meta.fabricmc.net/v2/versions/installer")).find(i => i.stable)
+      const fabricInstaller = (await fetchJson<FabricInstallerMeta[]>("https://meta.fabricmc.net/v2/versions/installer")).find(i => i.stable)
       if (!fabricInstaller) {
         throw new Error("Couldn't download fabric installer")
       }
@@ -194,7 +189,6 @@ export async function installForge(
   }
 
   const versionId = getVersionId(config)
-  console.log(versionId)
 
   if (isModernForge(config.version)) {
     // Modern forge (version >= 1.12.2)
@@ -312,6 +306,5 @@ export async function installFabric(config: ModloaderConfig, logger: logger) {
 
   const versionId = getVersionId(config)
   await ensureDir(path.join(config.paths.versions, versionId))
-  console.log(path.join(config.paths.versions, originalVersionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))
   await fs.cp(path.join(fakeLauncher, "versions", originalVersionId, `${originalVersionId}.json`), path.join(config.paths.versions, versionId, `${versionId}.json`))
 }

@@ -18,6 +18,11 @@ export default defineConfig({
         name: 'forge',
         description: 'Only forge and neoforge tests from full test suite',
         concurrent: false
+      },
+      {
+        name: 'modrinth',
+        description: 'Only tests that uses populars modrinth modpacks',
+        concurrent: false
       }
     ],
   },

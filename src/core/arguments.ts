@@ -1,10 +1,9 @@
 import path from "path";
 import { isNeeded } from "../utils/rules";
-import { Argument, Version } from "../utils/types";
+import { Argument, Version, Config } from "../utils/types";
 import { getLibraries } from "./libraries";
 import { version as packageVersion } from "../../package.json";
 import { getArgument } from "./log4j";
-import { Config } from "../launcher/instance";
 
 // Fill templates
 function fillArguments(

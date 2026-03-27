@@ -145,6 +145,7 @@ tests/temp
 tests/vanilla/*
 tests/modloaders/forge/*
 tests/modloaders/neoforge/*
+tests/modloaders/fabric/*
 
 # Test files
 handler.js
