@@ -5,23 +5,28 @@ export default defineConfig({
     fileParallelism: false,
     tags: [
       {
-        name: 'full',
-        description: 'Full test suite',
-        concurrent: false
-      },
-      {
         name: 'vanilla',
-        description: 'Only vanilla tests from full test suite',
+        description: 'Only vanilla tests',
         concurrent: false
       },
       {
         name: 'forge',
-        description: 'Only forge and neoforge tests from full test suite',
+        description: 'Only forge tests',
+        concurrent: false
+      },
+      {
+        name: 'neoforge',
+        description: 'Only neoforge tests',
+        concurrent: false
+      },
+      {
+        name: 'fabric',
+        description: 'Only fabric tests',
         concurrent: false
       },
       {
         name: 'modrinth',
-        description: 'Only tests that uses populars modrinth modpacks',
+        description: 'Only tests with populars modrinth modpacks',
         concurrent: false
       }
     ],
