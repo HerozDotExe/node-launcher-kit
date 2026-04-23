@@ -1,5 +1,5 @@
 import { test } from "vitest";
-import { Instance, offlineAuth, RuntimeManager, getJavaComponent, importModrinthModpack } from "../../dist/index.js";
+import { Instance, offlineAuth, RuntimeManager, getJavaComponent, importModrinthModpack } from "../dist/index.js";
 import path from "path";
 import fs from "fs/promises";
 
