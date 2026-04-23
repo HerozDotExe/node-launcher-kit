@@ -83,7 +83,7 @@ export type Native = {
   url: string;
 };
 
-type NativeOS = "natives-linux" | "natives-windows" | "natives-macos" | "natives-osx";
+type NativeOS = "natives-linux" | "natives-windows"| "natives-windows-32" | "natives-windows-64" | "natives-macos" | "natives-osx";
 
 type Rules = {
   action: "allow" | "disallow";
