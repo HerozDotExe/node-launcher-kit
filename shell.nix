@@ -7,6 +7,7 @@ pkgs.mkShell {
   # Java
   packages = with pkgs; [
     jdk21
+    jdk25
     jre8
     xrandr
   ];
@@ -49,4 +50,5 @@ pkgs.mkShell {
 
   j8 = pkgs.jre8 + "/bin/java";
   j21 = pkgs.jdk21 + "/bin/java";
+  j25 = pkgs.jdk25 + "/bin/java";
 }
