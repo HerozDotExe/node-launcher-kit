@@ -1,7 +1,7 @@
 {
-  "name": "nlk",
-  "version": "0.1.0",
-  "description": "Node Launcher Kit",
+  "name": "node-launcher-kit",
+  "version": "1.0.0",
+  "description": "A typescript library to install and launch minecraft with or without modloaders.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
