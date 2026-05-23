@@ -1,6 +1,16 @@
 # node-launcher-kit
 
-A node.js library to install and launch minecraft with or without modloaders.
+A typescript library to install and launch minecraft with or without modloaders.
+
+# Features
+
+* Supports installing and launching **vanilla** from 1.0 to 26.1.2
+* Supports installing and launching **forge** from 1.7.10 to 26.1.2
+* Supports installing and launching **neoforge** from its first version to 26.1.2
+* Supports installing and launching **fabric** from its first version to 26.1.2
+* Can install and launch **modrinth** modpacks
+* Uses **concurrents downloads** to speed up installation process
+
 
 ## Example
 
