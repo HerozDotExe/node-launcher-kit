@@ -5,7 +5,7 @@ export type RuntimeComponent =
   | "java-runtime-beta"
   | "java-runtime-delta"
   | "java-runtime-gamma"
-  | "java-runtime-gamma-snapsht"
+  | "java-runtime-gamma-snapshot"
   | "jre-legacy"
   | "minecraft-java-exe";
 
