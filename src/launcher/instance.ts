@@ -1,4 +1,4 @@
-import { EventEmitter } from "node:stream";
+import { EventEmitter } from "events";
 import { BaseConfig, Config, InstanceEvents, logger, PoolFile, Version, ModloaderConfig } from "../utils/types";
 import path from "node:path";
 import fs from "fs/promises"

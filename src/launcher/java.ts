@@ -10,7 +10,7 @@ import {
   RuntimeOS,
 } from "../utils/types";
 import { ensureDir } from "../utils/fs";
-import { EventEmitter } from "stream";
+import { EventEmitter } from "events";
 import { exec } from "child_process";
 import { arch, os } from "../utils/systemInfo";
 import { getVersionManifest } from "../core/version";
