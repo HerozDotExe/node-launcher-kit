@@ -4,7 +4,7 @@ import { Browser, BrowserWindow } from "happy-dom";
 import PQueue from "p-queue";
 
 // Use "java" tests if you don't want tests to download java by themselves, you will need to provide binaries path :
-// pnpm run test /path/to/java8/bin/java /path/to/java21/bin/java /path/to/java25/bin/java
+// npm run testGen /path/to/java8/bin/java /path/to/java21/bin/java /path/to/java25/bin/java
 
 const importantVersions = [
   "1.7.10",
