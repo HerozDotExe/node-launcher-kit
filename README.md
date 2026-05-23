@@ -68,6 +68,26 @@ You can use [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth) o
 
 You can use offlineAuth during development.
 
+## Contributing
+
+### Building
+
+Once in the cloned repository you can run `pnpm run build`.
+
+### Tests
+
+*Tests are not tracked by git and are generated via a script (tests/generator.js) from templates. This makes it faster to add new versions to test.*
+
+To generate tests you have to run `npm run testGen`.
+If you want you can specify paths to java binaries for java 8, 21 and 25: `npm run testGen /path/to/java8/bin/java /path/to/java21/bin/java /path/to/java25/bin/java`.
+
+Then you can use `npm run test` to run all tests or can filter tests with `npm run test [filter]`.
+**Running test will automatically rebuild the library.**
+
+### Nixos
+On nixos some packages are needed for minecraft to launch properly. Everything needed can be found in the `shell.nix` which you can enter with: `nix-shell ./nix`.
+Then when generating tests run `npm run testGen $j8 $j21 $j25` to use nixos java packages instead of the one installed by the library.
+
 ## Acknowledgments
 
 This project was inspired by [mclc](https://github.com/Pierce01/MinecraftLauncher-core).
