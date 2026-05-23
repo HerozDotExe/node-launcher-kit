@@ -16,6 +16,9 @@ A typescript library to install and launch minecraft with or without modloaders.
 You can use this code to install and launch minecraft 1.21.11 with offline auth. This will also automatically download fitting java binaries.
 
 ```js
+import {Instance, offlineAuth, RuntimeManager, getJavaComponent } from "node-launcher-kit"
+import path from "path"
+
 const gameRoot = path.join(import.meta.dirname, "mc");
 
 // install the correct java version for 1.21.11
@@ -49,10 +52,10 @@ await instance.install();
 const p = await instance.launch();
 
 // show minecraft's logs
-p.stdout.on("data", (d: Buffer) => {
+p.stdout.on("data", (d) => {
   console.log(d.toString());
 });
-p.stderr.on("data", (d: Buffer) => {
+p.stderr.on("data", (d) => {
   console.log(d.toString());
 });
 ```
