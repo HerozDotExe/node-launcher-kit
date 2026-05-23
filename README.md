@@ -2,7 +2,7 @@
 
 A typescript library to install and launch minecraft with or without modloaders.
 
-# Features
+## Features
 
 * Supports installing and launching **vanilla** from 1.0 to 26.1.2
 * Supports installing and launching **forge** from 1.7.10 to 26.1.2
@@ -11,8 +11,7 @@ A typescript library to install and launch minecraft with or without modloaders.
 * Can install and launch **modrinth** modpacks
 * Uses **concurrents downloads** to speed up installation process
 
-
-## Example
+## Basic Example
 
 You can use this code to install and launch minecraft 1.21.11 with offline auth. This will also automatically download fitting java binaries.
 
@@ -59,3 +58,15 @@ p.stderr.on("data", (d: Buffer) => {
 ```
 
 > You can look in the tests folder to see more examples showing how to use nlk with fabric, forge, neoforge, and modrinth's modpacks.
+
+## Authentification
+You can use [prismarine-auth](https://github.com/PrismarineJS/prismarine-auth) or [MSMC](https://github.com/Hanro50/MSMC) to authentificate with a microsoft account.
+*See src/utils/types.ts for Auth type.*
+
+You can use offlineAuth during development.
+
+## Acknowledgments
+
+This project was inspired by [mclc](https://github.com/Pierce01/MinecraftLauncher-core).
+
+`shell.nix` is a modification of [Tomate0613's](https://github.com/Tomate0613/launcher-core/blob/main/flake.nix).
