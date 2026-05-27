@@ -3,7 +3,7 @@ import { downloadFile } from "../utils/fetch";
 import { getTempFolder } from "../utils/temp";
 import { unzipAll } from "../utils/unzip";
 import { ensureDir, exists, readJson } from "../utils/fs";
-import { Modloader, ModrinthManifest, BaseConfig, PoolFile } from "../utils/types";
+import { Modloader, ModrinthManifest, BaseConfig, PoolFile, ModrinthPack } from "../utils/types";
 
 function getModloader(manifest: ModrinthManifest): Modloader {
     if (manifest.dependencies["fabric-loader"]) {
@@ -17,7 +17,7 @@ function getModloader(manifest: ModrinthManifest): Modloader {
     }
 }
 
-export async function importModrinthModpack(source: string, sourceType: "url" | "file"): Promise<Partial<BaseConfig>> {
+export async function importModrinthModpack(source: string, sourceType: "url" | "file"): Promise<ModrinthPack> {
     const tempFolder = await getTempFolder("modrinth")
 
     if (sourceType === "url") {

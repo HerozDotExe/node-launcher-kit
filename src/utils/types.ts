@@ -83,7 +83,13 @@ export type Native = {
   url: string;
 };
 
-type NativeOS = "natives-linux" | "natives-windows"| "natives-windows-32" | "natives-windows-64" | "natives-macos" | "natives-osx";
+type NativeOS =
+  | "natives-linux"
+  | "natives-windows"
+  | "natives-windows-32"
+  | "natives-windows-64"
+  | "natives-macos"
+  | "natives-osx";
 
 type Rules = {
   action: "allow" | "disallow";
@@ -93,9 +99,9 @@ type Rules = {
 
 export type Argument =
   | {
-    rules: Rules[];
-    value: string[] | string;
-  }
+      rules: Rules[];
+      value: string[] | string;
+    }
   | string;
 
 export type Library = {
@@ -229,73 +235,77 @@ export interface InstanceEvents {
     total: number,
     doneSize: number,
     totalSize: number,
-  ],
-  log: [
-    step: string,
-    message: unknown
-  ]
+  ];
+  log: [step: string, message: unknown];
 }
 
 export type ProcessArgs = {
-  game?: string,
-  java?: string
-}
+  game?: string;
+  java?: string;
+};
 
 export type ProcessRam = {
-  max?: string,
-  min?: string
-}
+  max?: string;
+  min?: string;
+};
 
-export type logger = (step: string, message: unknown) => void
+export type logger = (step: string, message: unknown) => void;
 
 export type FabricInstallerMeta = {
-  url: string,
-  maven: string,
-  version: string,
-  stable: boolean
-}
+  url: string;
+  maven: string;
+  version: string;
+  stable: boolean;
+};
 
 export type ModrinthManifestFile = {
-  path: string,
-  hashes : {sha1: string, sha512: string},
-  env: {client: string, server: string},
-  downloads: string[],
-  fileSize: number
-}
+  path: string;
+  hashes: { sha1: string; sha512: string };
+  env: { client: string; server: string };
+  downloads: string[];
+  fileSize: number;
+};
 
 export type ModrinthManifest = {
-  formatVersion: number,
-  game: string,
-  versionId: string,
-  name: string,
-  files: ModrinthManifestFile[],
+  formatVersion: number;
+  game: string;
+  versionId: string;
+  name: string;
+  files: ModrinthManifestFile[];
   dependencies: {
-    minecraft: string,
-    "fabric-loader": string
-    forge: string,
-    neoforge: string
-  }
-}
+    minecraft: string;
+    "fabric-loader": string;
+    forge: string;
+    neoforge: string;
+  };
+};
 
 export interface BaseConfig {
-    version: string;
-    auth: Auth;
-    paths: Paths
-    javaExecutable: string
-    modloader?: Modloader;
-    args?: ProcessArgs;
-    ram?: { max?: string; min?: string },
-    files?: PoolFile[],
-    overridesPath?: string
+  version: string;
+  auth: Auth;
+  paths: Paths;
+  javaExecutable: string;
+  modloader?: Modloader;
+  args?: ProcessArgs;
+  ram?: { max?: string; min?: string };
+  files?: PoolFile[];
+  overridesPath?: string;
 }
 
 export interface Config extends BaseConfig {
-    paths: Required<Paths>
-    args: Required<ProcessArgs>
-    ram: Required<ProcessRam>
-    files: PoolFile[]
+  paths: Required<Paths>;
+  args: Required<ProcessArgs>;
+  ram: Required<ProcessRam>;
+  files: PoolFile[];
 }
 
 export interface ModloaderConfig extends Config {
-  modloader: Modloader
+  modloader: Modloader;
+}
+
+export interface ModrinthPack {
+  version: string;
+  modloader: Modloader;
+  files: PoolFile[];
+  overridesPath: string;
 }
