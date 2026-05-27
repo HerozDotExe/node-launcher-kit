@@ -11,6 +11,10 @@ A typescript library to install and launch minecraft with or without modloaders.
 * Can install and launch **modrinth** modpacks
 * Uses **concurrents downloads** to speed up installation process
 
+## Install
+
+`npm install node-launcher-kit`
+
 ## Basic Example
 
 You can use this code to install and launch minecraft 1.21.11 with offline auth. This will also automatically download fitting java binaries.
