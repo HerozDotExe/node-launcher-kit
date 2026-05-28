@@ -1,7 +1,7 @@
 {
   "name": "node-launcher-kit",
   "homepage": "https://github.com/HerozDotExe/node-launcher-kit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A typescript library to install and launch minecraft with or without modloaders.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
